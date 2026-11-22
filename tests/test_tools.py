@@ -221,7 +221,8 @@ def test_prompt_shows_exact_command_and_project_local_warning(repo, make_ctx, mo
     c = make_ctx(repo)
     sa.ToolSuite(ApprovalPolicy(prompt=lambda m: messages.append(m) and False)).run("quality", repo, c.profile, c.reader)
     msg = next(m for m in messages if "eslint" in m)
-    assert "node_modules/.bin/eslint" in msg and "--no-fix" in msg and "executes code from this repository" in msg
+    assert "node_modules/.bin/eslint" in msg.replace("\\", "/")  # Windows paths use backslashes
+    assert "--no-fix" in msg and "executes code from this repository" in msg
 
 
 def test_exit_code_timeout_and_garbage_output_are_reported_not_hidden(repo, make_ctx, monkeypatch):

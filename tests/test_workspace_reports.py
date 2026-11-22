@@ -3,6 +3,7 @@ import base64
 import hashlib
 import json
 import re
+import sys
 from html.parser import HTMLParser
 
 import pytest
@@ -126,13 +127,18 @@ def test_slugify_is_safe(name, expected):
 
 
 def test_unusual_project_folder_names_work(tmp_path):
-    root = make_project(tmp_path, '..weird <b>name</b> & "quotes" é')
+    # Windows does not allow < > " in file names, so there the markup characters are left out of the folder name
+    # (HTML escaping of repository text is covered separately by test_repository_text_is_escaped_...).
+    name = '..weird name & quotes é' if sys.platform == "win32" else '..weird <b>name</b> & "quotes" é'
+    root = make_project(tmp_path, name)
     out = tmp_path / "reports"
     analyze(root, out)
     (ws,) = list(out.iterdir())
     assert re.fullmatch(r"[a-z0-9][a-z0-9._-]*", ws.name) and ws.resolve().parent == out.resolve()
     html = (run_dir(out, root) / "report.html").read_text()
-    assert "<b>name</b>" not in html and "&lt;b&gt;name&lt;/b&gt;" in html
+    if "<" in name:
+        assert "<b>name</b>" not in html and "&lt;b&gt;name&lt;/b&gt;" in html
+    assert "&amp;" in html  # the ampersand in the name is escaped
 
 
 def test_incomplete_runs_are_ignored(tmp_path):
