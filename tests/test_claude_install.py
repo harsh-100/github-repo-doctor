@@ -91,21 +91,42 @@ def test_templates_have_valid_frontmatter_and_minimal_tools():
     assert agent["name"].strip() == "doctor-responder" and tools == {"Bash", "Write"}  # no Read/Edit/Grep
 
 
-def all_help():
-    names = ["analyze", "security", "quality", "tests", "explain", "fix", "fix-apply", "report", "claude-install",
-             "exchange pending", "exchange show", "exchange answer", "exchange clear"]
-    return {n: runner.invoke(app, [*n.split(), "--help"], terminal_width=200).output for n in names}
+def cli_surface() -> tuple[set[str], set[str]]:
+    """Every command ("fix-apply", "exchange show", ...) and option ("--trust-tools", ...) the real CLI defines.
+
+    Read from the command definitions, not from `--help` text: Typer colours help output in CI (GitHub Actions) and the
+    colour codes split option names, so searching rendered help is not reliable."""
+    import typer.main
+    commands: set[str] = set()
+    options: set[str] = set()
+
+    def visit(cmd, prefix=""):
+        for param in cmd.params:
+            options.update(getattr(param, "opts", []))
+            options.update(getattr(param, "secondary_opts", []))
+        for name, sub in getattr(cmd, "commands", {}).items():
+            commands.add(prefix + name)
+            visit(sub, prefix + name + " ")
+
+    visit(typer.main.get_command(app))
+    return commands, options
+
+
+def test_cli_surface_reader_sees_known_commands_and_options():
+    commands, options = cli_surface()
+    assert {"analyze", "fix", "fix-apply", "claude-install", "exchange pending", "exchange answer"} <= commands
+    assert {"--trust-tools", "--approve-diff", "--repo", "--yes", "--provider"} <= options
 
 
 def test_templates_only_reference_real_commands_and_flags():
-    helps = all_help()
+    commands, options = cli_surface()
     text = "\n".join(p.read_text() for p in [*COMMANDS, SRC / "agents/doctor-responder.md"])
     for m in re.finditer(r"repo-doctor (exchange \w+|[a-z][a-z-]+)", text):
         sub = m.group(1)
-        assert sub in helps or sub == "exchange", f"unknown command: {sub}"  # "exchange" alone = the group
+        assert sub in commands or sub == "exchange", f"unknown command: {sub}"  # "exchange" alone = the group
     slash_only = {"--tools"}  # typed to /doctor-analyze itself, translated to --trust-tools/--no-tools
-    for flag in set(re.findall(r"`?(--[a-z][a-z-]+)", text)) - slash_only:
-        assert any(flag in h for h in helps.values()), f"flag not found in any --help: {flag}"
+    for flag in sorted(set(re.findall(r"`?(--[a-z][a-z-]+)", text)) - slash_only):
+        assert flag in options, f"flag is not defined by any command: {flag}"
 
 
 def test_permissions_fragment_is_safe():

@@ -8,8 +8,11 @@ SAMPLE = Path(__file__).parent.parent / "examples" / "sample-project"
 
 @pytest.fixture
 def sample_repo(tmp_path):
+    """A copy of examples/sample-project. Its `.env` is created here, not committed: `.env` is gitignored on
+    purpose (so it is absent from a fresh checkout such as CI) and a committed secrets file is bad practice."""
     dest = tmp_path / "sample"
     shutil.copytree(SAMPLE, dest)
+    (dest / ".env").write_text("SECRET_TOKEN=abcdef123456\n")  # fake value; tests assert it is never read or reported
     return dest
 
 
