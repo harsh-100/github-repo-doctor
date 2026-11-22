@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "github-repo-doctor"
-version = "0.1.0"
+version = "0.3.0"
 description = "AI-powered repository analysis agent that runs locally."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -40,8 +40,14 @@ repo-doctor = "repo_doctor.main:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+repo_doctor = ["claude_code/*.json", "claude_code/commands/*.md", "claude_code/agents/*.md"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+ignore = ["ISC004"]  # long explanatory strings are split across lines on purpose

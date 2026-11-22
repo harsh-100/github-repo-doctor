@@ -96,11 +96,17 @@ def unfixable_reason(f: Finding) -> str | None:
     return None
 
 
-def load_findings(out_dir: Path) -> AnalysisResult:
-    path = out_dir / "findings.json"
+def load_findings(path: Path) -> AnalysisResult:
+    """Read findings from a run's findings.json (ReportData; the older bare AnalysisResult is also accepted)."""
+    if path.is_dir():
+        path = path / "findings.json"
     if not path.exists():
         raise FileNotFoundError(f"{path} not found. Run `repo-doctor analyze` first.")
-    return AnalysisResult.model_validate_json(path.read_text(encoding="utf-8"))
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return AnalysisResult.model_validate(data["result"] if isinstance(data, dict) and "result" in data else data)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"{path} is not a valid findings file: {exc}") from exc
 
 
 # ------------------------------------------------------------------ file access
@@ -228,6 +234,15 @@ def syntax_error(rel: str, text: str) -> str | None:
         except ValueError as exc:
             return f"invalid JSON: {exc}"
     return None
+
+
+def diff_id(prop: Proposal) -> str:
+    """Stable id of the exact change (file + before + after). Approval can be bound to it."""
+    h = hashlib.sha256()
+    for part in (prop.rel, prop.old_text, prop.new_text):
+        h.update(part.encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()[:12]
 
 
 def make_diff(rel: str, old: str, new: str) -> str:

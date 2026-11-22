@@ -41,6 +41,7 @@ disabled = []                 # e.g. ["eslint", "npm-audit"]
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | provider keys (take precedence over stored keys) |
 | `REPO_DOCTOR_MODEL` | model name override |
 | `REPO_DOCTOR_HOME` | config directory override |
+| `REPO_DOCTOR_PROVIDER` | same as `--provider` (`anthropic`, `openai` or `exchange`) |
 
 ## Default scan exclusions
 
@@ -52,4 +53,4 @@ Directories: `.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `bu
 ## Command flags worth knowing
 
 `--no-llm` (no network), `--no-tools` (no external tools), `--trust-tools` (pre-approve tools),
-`--out DIR` (report directory, default `./reports`), and for `fix`: `--id`, `--dry-run`, `--run-tests`.
+`--out DIR` (the reports **root**, default `./reports`; each project gets `DIR/<project>/runs/<run-id>/`), and for `fix`/`report`: `--run <run-id>` to use an older analysis. For `fix`: `--id`, `--dry-run`, `--run-tests`.

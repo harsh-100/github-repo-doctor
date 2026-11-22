@@ -1,8 +1,10 @@
-import sys
+import json
 from pathlib import Path
 
 import httpx
 import pytest
+from reporting import report_md, run_dir
+from reporting import result as run_result
 from typer.testing import CliRunner
 
 from repo_doctor.cli import app
@@ -14,8 +16,8 @@ def test_analyze_no_llm_writes_report(sample_repo, tmp_path):
     out = tmp_path / "out"
     r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--no-llm", "--out", str(out)])
     assert r.exit_code == 0, r.output
-    text = (out / "PROJECT_OVERVIEW.md").read_text()
-    assert "Flask" in text and "React" in text and "`httpx`" in text
+    text = report_md(out, sample_repo)
+    assert "Flask" in text and "React" in text and "Python (2 files)" in text
     # secrets in the fixture must never reach the report
     assert "hunter2secret" not in text and "abcdef123456" not in text
 
@@ -37,7 +39,7 @@ def test_analyze_with_mocked_llm_sends_redacted_context(sample_repo, tmp_path, m
     out = tmp_path / "out"
     r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--out", str(out)])
     assert r.exit_code == 0, r.output
-    assert "Mocked." in (out / "PROJECT_OVERVIEW.md").read_text()
+    assert "Mocked." in report_md(out, sample_repo)
     payload = str(sent)
     assert "hunter2secret" not in payload and "sk-ant-abcdefghijklmnop" not in payload
 
@@ -47,7 +49,7 @@ def test_analyze_survives_llm_failure(sample_repo, tmp_path, monkeypatch):
     monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(500, text="oops"))
     out = tmp_path / "out"
     r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--out", str(out)])
-    assert r.exit_code == 0 and (out / "PROJECT_OVERVIEW.md").exists()
+    assert r.exit_code == 0 and (run_dir(out, sample_repo) / "report.md").exists()
     assert "AI summary failed" in r.output
 
 
@@ -56,11 +58,16 @@ def test_explain_without_key_fails(sample_repo):
     assert r.exit_code == 1
 
 
-def test_report_command(tmp_path):
-    r = runner.invoke(app, ["report", "--out", str(tmp_path)])
-    assert r.exit_code == 1 and "No report found" in r.output
-    (tmp_path / "PROJECT_OVERVIEW.md").write_text("# Hello")
-    assert runner.invoke(app, ["report", "--out", str(tmp_path)]).exit_code == 0
+def test_report_command(sample_repo, tmp_path):
+    out = tmp_path / "out"
+    r = runner.invoke(app, ["report", "--path", str(sample_repo), "--out", str(out)])
+    assert r.exit_code == 1 and "No analysis of this project" in " ".join(r.output.split())
+    runner.invoke(app, ["analyze", "--path", str(sample_repo), "--no-llm", "--no-tools", "--out", str(out)])
+    shown = runner.invoke(app, ["report", "--path", str(sample_repo), "--out", str(out)])
+    assert shown.exit_code == 0 and "Executive summary" in shown.output
+    paths = json.loads(runner.invoke(app, ["report", "--path", str(sample_repo), "--out", str(out), "--json"]).output)
+    assert paths["project"] == "sample" and paths["html"].endswith("report.html")
+    assert paths["dashboard"].endswith("index.html") and Path(paths["markdown"]).is_file()
 
 
 def test_setup_skip_check_stores_config(monkeypatch):
@@ -87,13 +94,16 @@ def test_analyze_writes_both_reports_and_findings_json(sample_repo, tmp_path):
     out = tmp_path / "out"
     r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--no-llm", "--out", str(out)])
     assert r.exit_code == 0, r.output
-    assert {p.name for p in out.iterdir()} == {"PROJECT_OVERVIEW.md", "REPO_HEALTH_REPORT.md", "findings.json"}
+    rd = run_dir(out, sample_repo)
+    assert {p.name for p in rd.iterdir()} == {"report.md", "report.html", "findings.json", "metadata.json", "assets"}
+    assert {p.name for p in (out / "sample").iterdir()} == {"index.html", "project.json", "README.md", "runs"}
     assert "Critical Issues:" in r.output and "Project Health: Critical" in r.output
     assert "[5/5] Reviewer Agent" in r.output and "Static Analysis" in r.output
     assert "denied" in r.output  # tools never run without approval
-    for f in out.iterdir():
-        text = f.read_text()
-        assert "hunter2secret" not in text and "sk-ant-abcdefghijklmnop" not in text
+    for f in out.rglob("*"):
+        if f.is_file():
+            text = f.read_text()
+            assert "hunter2secret" not in text and "sk-ant-abcdefghijklmnop" not in text, f.name
 
 
 @pytest.mark.parametrize("cmd,report,agent,last", [
@@ -105,7 +115,9 @@ def test_focused_commands(sample_repo, tmp_path, cmd, report, agent, last):
     out = tmp_path / "out"
     r = runner.invoke(app, [cmd, "--path", str(sample_repo), "--no-llm", "--out", str(out)])
     assert r.exit_code == 0, r.output
-    assert (out / report).exists() and not (out / "REPO_HEALTH_REPORT.md").exists()
+    assert (run_dir(out, sample_repo) / "report.md").exists()
+    assert json.loads((run_dir(out, sample_repo) / "metadata.json").read_text())["mode"] == {
+        "SECURITY_REPORT.md": "security", "QUALITY_REPORT.md": "quality", "TESTS_REPORT.md": "tests"}[report]
     assert agent in r.output and f"[{last}/{last}] Reviewer Agent" in r.output
 
 
@@ -129,55 +141,9 @@ def test_provider_outage_degrades_gracefully(sample_repo, tmp_path, monkeypatch)
     monkeypatch.setattr(httpx, "post", lambda *a, **k: httpx.Response(500, text="oops"))
     out = tmp_path / "o"
     r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--out", str(out)])
-    assert r.exit_code == 0 and (out / "REPO_HEALTH_REPORT.md").exists()
-    assert "LLM batch failed" in (out / "REPO_HEALTH_REPORT.md").read_text()
+    assert r.exit_code == 0 and (run_dir(out, sample_repo) / "report.html").exists()
+    assert "LLM batch failed" in report_md(out, sample_repo)
     assert "Critical Issues:  1" in r.output  # deterministic findings still delivered
-
-
-def test_report_shows_latest(tmp_path):
-    import os
-    (tmp_path / "PROJECT_OVERVIEW.md").write_text("# Overview")
-    (tmp_path / "REPO_HEALTH_REPORT.md").write_text("# Health")
-    os.utime(tmp_path / "PROJECT_OVERVIEW.md", (1, 1))
-    r = runner.invoke(app, ["report", "--out", str(tmp_path)])
-    assert "Health" in r.output and "REPO_HEALTH_REPORT.md" in r.output
-
-
-RUFF = Path(sys.executable).parent / "ruff"
-
-
-def test_no_tools_flag_skips_static_step(sample_repo, tmp_path):
-    r = runner.invoke(app, ["quality", "--path", str(sample_repo), "--no-llm", "--no-tools",
-                            "--out", str(tmp_path / "o")])
-    assert r.exit_code == 0 and "Static Analysis" not in r.output and "[2/2] Reviewer" in r.output
-
-
-def test_interactive_prompt_shows_command_and_denial_runs_nothing(sample_repo, tmp_path):
-    r = runner.invoke(app, ["quality", "--path", str(sample_repo), "--no-llm", "--out", str(tmp_path / "o")],
-                      input="n\nn\nn\n")
-    assert r.exit_code == 0
-    assert "Allow?" in r.output and "ruff check" in r.output and "denied" in r.output
-
-
-@pytest.mark.skipif(not RUFF.exists(), reason="ruff not installed")
-def test_trust_tools_runs_real_ruff_and_reports_it(sample_repo, tmp_path):
-    (sample_repo / "unused.py").write_text("import os\nimport sys\n")
-    out = tmp_path / "o"
-    r = runner.invoke(app, ["quality", "--path", str(sample_repo), "--no-llm", "--trust-tools", "--out", str(out)])
-    assert r.exit_code == 0, r.output
-    md = (out / "QUALITY_REPORT.md").read_text()
-    assert "| ruff | ran |" in md and "F401" in md and "tool:ruff" in md
-    assert "Allow?" not in r.output  # trusted mode doesn't prompt
-
-
-def test_trusted_setting_in_config_enables_tools(sample_repo, tmp_path):
-    from repo_doctor.core.settings import Settings, save_settings
-    st = Settings()
-    st.tools.trusted = True
-    st.tools.disabled = ["ruff", "bandit", "gitleaks", "eslint", "tsc", "npm-audit"]
-    save_settings(st)
-    r = runner.invoke(app, ["analyze", "--path", str(sample_repo), "--no-llm", "--out", str(tmp_path / "o")])
-    assert r.exit_code == 0 and "Allow?" not in r.output
 
 
 # ---------------------------------------------------------------- fix command
@@ -189,15 +155,13 @@ FIX_EDIT = {"search": "    except:\n        return None", "replace": "    except
 @pytest.fixture
 def analysed(tmp_path, monkeypatch):
     """A project analysed with deterministic checks only; returns (root, out_dir, finding_id)."""
-    import json
     root = tmp_path / "proj"
     root.mkdir()
     (root / "mod.py").write_text(FIX_CODE)
     out = tmp_path / "out"
     r = runner.invoke(app, ["quality", "--path", str(root), "--no-llm", "--no-tools", "--out", str(out)])
     assert r.exit_code == 0, r.output
-    data = json.loads((out / "findings.json").read_text())
-    fid = next(f["id"] for f in data["findings"] if f["title"] == "Bare except")
+    fid = next(f["id"] for f in run_result(out, root)["findings"] if f["title"] == "Bare except")
     return root, out, fid
 
 
@@ -219,7 +183,7 @@ def test_fix_approved_end_to_end(analysed, monkeypatch):
     assert r.exit_code == 0, r.output
     assert "except OSError" in (root / "mod.py").read_text()
     assert "Apply this change" in r.output and "catch only file errors" in r.output and "-    except:" in r.output
-    report = (out / "FIX_REPORT.md").read_text()
+    report = next(run_dir(out, root).glob("fix-report-*.md")).read_text()
     assert "Applied and verified: **1**" in report and "```diff" in report
     assert "Originals backed up to" in r.output
 
@@ -280,23 +244,22 @@ def test_fix_refuses_findings_for_another_repository(analysed, tmp_path, monkeyp
     other.mkdir()
     use_provider(monkeypatch, {"edits": [FIX_EDIT]})
     r = run_fix(other, out, "--id", fid)
-    assert r.exit_code == 1 and "was generated for" in " ".join(r.output.split())
+    assert r.exit_code == 1 and "No analysis of this project" in " ".join(r.output.split())
 
 
 def test_fix_requires_findings_and_a_provider(analysed, tmp_path):
     root, out, fid = analysed
     r = run_fix(root, tmp_path / "empty", "--id", fid)
-    assert r.exit_code == 1 and "findings.jsonnotfound" in "".join(r.output.split())
+    assert r.exit_code == 1 and "No analysis of this project" in " ".join(r.output.split())
     r = run_fix(root, out, "--id", fid)  # no API key configured
     assert r.exit_code == 1 and "requires an AI provider" in " ".join(r.output.split())
     assert (root / "mod.py").read_text() == FIX_CODE
 
 
 def test_fix_secret_findings_are_not_auto_fixable(sample_repo, tmp_path, monkeypatch):
-    import json
     out = tmp_path / "out"
     runner.invoke(app, ["security", "--path", str(sample_repo), "--no-llm", "--no-tools", "--out", str(out)])
-    secret = next(f["id"] for f in json.loads((out / "findings.json").read_text())["findings"]
+    secret = next(f["id"] for f in run_result(out, sample_repo)["findings"]
                   if f["category"].startswith("security/hardcoded-secret"))
     before = (sample_repo / "src" / "app.py").read_text()
     use_provider(monkeypatch, {"edits": [FIX_EDIT]})

@@ -9,7 +9,6 @@ from repo_doctor.core.dedup import deduplicate
 from repo_doctor.core.models import AnalysisResult, Finding, Severity, Verification
 from repo_doctor.core.orchestrator import Orchestrator, default_agents
 from repo_doctor.providers import ProviderError
-from repo_doctor.reports.health import render_health
 
 
 def F(**kw):
@@ -170,23 +169,36 @@ def test_health_levels():
     assert spec.health() == "Healthy"  # speculative findings don't drive health
 
 
-def test_report_has_all_sections_and_no_secrets(sample_repo, make_ctx):
+def _data(ctx, result, mode="analyze"):
+    from repo_doctor.reports.data import ProjectInfo, RunInfo, build_report_data
+    run = RunInfo(id="2026-11-22_120000_abcdef", created_at="2026-11-22T12:00:00+00:00", duration_seconds=2.0,
+                  mode=mode, tool_version="0.0.0")
+    proj = ProjectInfo(name="demo", slug="demo", root=str(ctx.root), root_hash="r", identity_hash="i")
+    return build_report_data(profile=ctx.profile, result=result, run=run, project=proj, narrative=None)
+
+
+def test_markdown_report_has_all_sections_and_no_secrets(sample_repo, make_ctx):
+    from repo_doctor.reports.markdown import render_markdown
     c = make_ctx(sample_repo)
     r = Orchestrator(c).run("analyze")
-    md = render_health(c.profile, r)
+    md = render_markdown(_data(c, r))
     for n in range(1, 12):
         assert f"## {n}. " in md
-    assert "Project health: Critical" in md and "Evidence" in md and "Recommended action" in md
+    assert "Overall status: Needs urgent review" in md and "Technical evidence" in md and "How to fix it" in md
     for secret in ("hunter2secret", "sk-ant-abcdefghijklmnop1234567890", "abcdef123456"):
-        assert secret not in md and secret not in r.model_dump_json()
+        assert secret not in md and secret not in r.model_dump_json() and secret not in _data(c, r).model_dump_json()
 
 
-def test_report_escapes_code_fences_and_marks_scope(ctx):
-    f = F(evidence="a ``` b", verification=Verification.UNVERIFIED)
-    r = AnalysisResult(mode="security", findings=[f])
-    md = render_health(ctx.profile, r)
-    assert "a ``` b" not in md and "Scope: **Security analysis** only" in md
-    assert "unverified" in md
+def test_report_escapes_code_fences_and_raw_html(ctx):
+    from repo_doctor.reports.markdown import render_markdown
+    f = F(evidence="a ``` b <script>alert(1)</script>", verification=Verification.UNVERIFIED,
+          title="<img src=x onerror=alert(1)>")
+    md = render_markdown(_data(ctx, AnalysisResult(mode="security", findings=[f])))
+    import re
+    outside_fences = re.sub(r"(`{3,}).*?\1", "", md, flags=re.DOTALL)  # fenced code is shown literally by Markdown viewers
+    assert "<script>" not in outside_fences and "<img" not in outside_fences and "&lt;img" in md
+    assert "a ``` b" in md and "````" in md  # evidence containing ``` is fenced with a longer fence
+    assert "Unconfirmed" in md
 
 
 def test_findings_json_roundtrip():

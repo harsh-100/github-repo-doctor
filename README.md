@@ -78,17 +78,17 @@ extra_excludes = ["*.log"]
 ## Use
 
 ```bash
-repo-doctor analyze --path /path/to/project   # overview + all agents -> reports/REPO_HEALTH_REPORT.md
-repo-doctor security --path .                 # security agent only   -> reports/SECURITY_REPORT.md
-repo-doctor quality  --path .                 # code agent only       -> reports/QUALITY_REPORT.md
-repo-doctor tests    --path .                 # testing agent only    -> reports/TESTS_REPORT.md
+repo-doctor analyze --path /path/to/project   # full analysis: all agents + tools
+repo-doctor security --path .                 # security agent only
+repo-doctor quality  --path .                 # code agent only
+repo-doctor tests    --path .                 # testing agent only
 repo-doctor analyze --path . --no-llm         # deterministic checks only, no network
 repo-doctor explain --path .                  # plain-language explanation
 repo-doctor report                            # show the latest report
 repo-doctor fix --path .                      # propose fixes, apply only what you approve
 ```
 
-Every run also writes `reports/findings.json` (structured findings). Nothing in the analysed
+Every run writes a new report folder (see below). Nothing in the analysed
 repository is ever modified. Without an API key, agents still run their built-in checks.
 
 ## External analysis tools
@@ -119,9 +119,34 @@ Tool findings are `verified`, use the tool's own message as evidence, and are ne
 the model; the LLM may only add a plain-language `AI explanation` (and a fix if the tool gave
 none). A tool and a built-in check flagging the same line are merged, keeping the tool's result.
 
+## Reports
+
+Every analysis gets its own folder and **nothing is ever overwritten**:
+
+```text
+reports/
+└── my-project/
+    ├── index.html                 project dashboard: history of every run, trend, links
+    ├── project.json, README.md
+    └── runs/
+        ├── 2026-11-22_120100_a81f3c/
+        │   ├── report.html        open in a browser; works offline; light/dark; print to PDF
+        │   ├── report.md          the same findings in Markdown
+        │   ├── findings.json      the data both reports are built from
+        │   ├── metadata.json      run summary (no secrets, no local paths)
+        │   └── assets/            chart SVGs
+        └── 2026-11-23_094500_b92d1e/ ...
+```
+
+The reports are written for people: a plain-language summary, what is working well, why each finding
+matters and how to fix it (with expandable technical evidence), a prioritised action plan, and an honest
+methodology and limitations section. `--out DIR` sets the reports root (default `./reports`). Two projects
+with the same folder name get separate workspaces. `repo-doctor report` shows the latest report in the
+terminal, and `repo-doctor report --json` prints the file locations. An example is in `examples/reports/`.
+
 ## Fixing findings (`repo-doctor fix`)
 
-Run `analyze` (or `security` / `quality`) first; `fix` reads `reports/findings.json`.
+Run `analyze` (or `security` / `quality`) first; `fix` reads the findings of the project's latest analysis run (`--run <run-id>` picks another).
 
 ```bash
 repo-doctor fix --path .                 # pick findings interactively (numbers, ids or "all")
@@ -154,7 +179,7 @@ Safeguards:
 - Not auto-fixable (kept in the report for manual action): hardcoded secrets (rotate the credential
   first), dependency vulnerabilities, missing tests, project-level and speculative findings.
 
-`reports/FIX_REPORT.md` lists every outcome (applied, rolled back, declined, skipped) with diffs and
+`fix-report-<time>.md` (saved inside the analysis run's folder) lists every outcome (applied, rolled back, declined, skipped) with diffs and
 verification results. Review with `git diff` before committing, and re-run `analyze` afterwards.
 
 ## How it works

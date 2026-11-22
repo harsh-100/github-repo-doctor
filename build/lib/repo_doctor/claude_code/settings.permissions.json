@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(repo-doctor:*)",
+      "Bash(.venv/bin/repo-doctor:*)",
+      "Edit(/reports/.exchange/**)"
+    ],
+    "ask": [
+      "Bash(repo-doctor fix-apply:*)",
+      "Bash(.venv/bin/repo-doctor fix-apply:*)",
+      "Bash(repo-doctor * --trust-tools*)",
+      "Bash(.venv/bin/repo-doctor * --trust-tools*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.key)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.config/repo-doctor/**)"
+    ]
+  }
+}

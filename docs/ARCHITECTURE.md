@@ -5,7 +5,10 @@ cli.py ──► Orchestrator ──► ToolSuite (external tools, approval-gate
               │            ├─► CodeAgent / SecurityAgent / TestingAgent
               │            ├─► dedup ─► ReviewerAgent ─► explainer
               ▼
-        reports/health.py ─► reports/*.md + findings.json
+        reports/publish.py ─► ReportData (findings.json, the single source of truth)
+                              ├─► markdown.py ─► report.md
+                              └─► html.py ─► report.html (+ charts.py, project dashboard)
+                              all inside reports/<project>/runs/<run-id>/ (workspace.py)
 cli.py fix ─► core/fixer.py ─► core/verify.py (rollback on failure) ─► reports/fix_report.py
 ```
 
@@ -18,12 +21,13 @@ cli.py fix ─► core/fixer.py ─► core/verify.py (rollback on failure) ─�
 | `core/models.py` | Pydantic models (`Finding`, `ProjectProfile`, `AnalysisResult`, ...) |
 | `core/orchestrator.py`, `core/dedup.py`, `core/explainer.py` | run, merge, explain |
 | `core/fixer.py`, `core/verify.py` | fix proposals, backups, apply/rollback, verification |
-| `providers/` | `LLMProvider` abstraction, Anthropic and OpenAI over `httpx` |
+| `providers/` | `LLMProvider` abstraction: Anthropic and OpenAI over `httpx`, plus `exchange` (file-based; Claude Code answers, see `docs/CLAUDE_CODE.md`) |
+| `claude_code/`, `core/claude_install.py` | packaged slash commands, restricted subagent and permissions; `claude-install` copies them into a project |
 | `analyzers/` | repository scanner, language/framework detection, manifests, tool specs and parsers |
 | `agents/` | agent base + validation pipeline, code/security/testing/reviewer agents |
 | `tools/` | `RepoReader` (inventory-confined, redacting file access), `command_runner` |
 | `security/` | `redaction.py`, `permissions.py` (path confinement, allowlist, approval policy) |
-| `reports/` | Markdown rendering |
+| `reports/` | `workspace.py` (project identity, unique run folders, history), `data.py` (`ReportData`: summary, strengths, action plan, methodology), `language.py` (plain-language texts), `markdown.py`, `html.py`, `charts.py` (SVG), `publish.py` |
 
 ## Safety design
 

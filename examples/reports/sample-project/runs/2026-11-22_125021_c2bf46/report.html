@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src &#x27;none&#x27;; img-src data:; style-src &#x27;unsafe-inline&#x27;; script-src &#x27;sha256-OrPjdvWN8I/Ct+IIFbbv1Z+8obWPEOSQcR3f28mtXGs=&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;; frame-ancestors &#x27;none&#x27;">
+<meta name="color-scheme" content="light dark">
+<title>Repo Doctor report: sample-project</title>
+<style>
+:root{--bg:#f6f7f9;--surface:#fff;--text:#1b2230;--muted:#5b6475;--border:#dde1e8;--accent:#1d4ed8;--accent-bg:#e8efff;
+--crit:#b42318;--crit-bg:#fdeceb;--high:#b93815;--high-bg:#fdeee7;--med:#8a5a00;--med-bg:#fdf3dc;--low:#216e3f;--low-bg:#e5f4ea;
+--info:#475467;--info-bg:#eceef2;--ok:#216e3f;--ok-bg:#e5f4ea;--shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+--code-bg:#f0f2f6;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+html[data-theme=dark]{--bg:#0f141b;--surface:#171e28;--text:#e6e9ef;--muted:#9aa4b5;--border:#2a3340;--accent:#8ab4ff;--accent-bg:#1c2a44;
+--crit:#ff8a80;--crit-bg:#3a1c1c;--high:#ffa270;--high-bg:#3a2417;--med:#f1c15d;--med-bg:#392d12;--low:#7fd49b;--low-bg:#17301f;
+--info:#aab3c2;--info-bg:#232b37;--ok:#7fd49b;--ok-bg:#17301f;--shadow:none;--code-bg:#0d1218}
+@media(prefers-color-scheme:dark){html:not([data-theme=light]){--bg:#0f141b;--surface:#171e28;--text:#e6e9ef;--muted:#9aa4b5;--border:#2a3340;--accent:#8ab4ff;--accent-bg:#1c2a44;
+--crit:#ff8a80;--crit-bg:#3a1c1c;--high:#ffa270;--high-bg:#3a2417;--med:#f1c15d;--med-bg:#392d12;--low:#7fd49b;--low-bg:#17301f;
+--info:#aab3c2;--info-bg:#232b37;--ok:#7fd49b;--ok-bg:#17301f;--shadow:none;--code-bg:#0d1218}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}code,pre{font-family:var(--mono)}code{background:var(--code-bg);padding:.1em .35em;border-radius:4px;font-size:.9em}
+.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;background:var(--surface);padding:8px;z-index:20}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.topbar{position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar .in{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.brand{font-weight:700;letter-spacing:.2px}.brand span{color:var(--accent)}.crumb{color:var(--muted);font-size:.9rem}
+.spacer{flex:1}.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;
+font:inherit;font-size:.9rem;cursor:pointer}.btn:hover{background:var(--accent-bg)}.btn[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent)}
+nav.sections{max-width:1080px;margin:0 auto;padding:0 16px 8px;display:flex;gap:6px;flex-wrap:wrap}
+nav.sections a{font-size:.85rem;text-decoration:none;color:var(--muted);padding:2px 8px;border-radius:999px;border:1px solid transparent}
+nav.sections a:hover{border-color:var(--border);color:var(--text)}
+main{max-width:1080px;margin:0 auto;padding:24px 16px 64px}
+.hero{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:var(--shadow)}
+.hero h1{margin:0 0 4px;font-size:1.9rem;line-height:1.2;overflow-wrap:anywhere}.hero p{margin:4px 0;color:var(--muted)}
+.pill{display:inline-block;padding:3px 12px;border-radius:999px;font-weight:600;font-size:.9rem;margin-top:10px}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.fair{background:var(--low-bg);color:var(--low)}
+.pill.warn{background:var(--med-bg);color:var(--med)}.pill.crit{background:var(--crit-bg);color:var(--crit)}
+section{margin-top:36px}h2{font-size:1.35rem;margin:0 0 12px;scroll-margin-top:110px}h3{font-size:1.1rem;margin:20px 0 8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-top:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.card .n{font-size:1.9rem;font-weight:700;line-height:1.1}.card .l{color:var(--muted);font-size:.85rem}
+.card.crit .n{color:var(--crit)}.card.high .n{color:var(--high)}.card.med .n{color:var(--med)}.card.low .n{color:var(--low)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+.panel p:first-child{margin-top:0}.panel p:last-child{margin-bottom:0}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;margin-top:16px}
+.charts figure{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+svg{display:block;max-width:100%;height:auto}
+figure{margin:0}figcaption{color:var(--muted);font-size:.85rem;margin-top:6px}
+.callout{border-left:4px solid var(--accent);background:var(--accent-bg);padding:10px 14px;border-radius:6px;margin:10px 0}
+.callout.ctx{border-color:var(--med);background:var(--med-bg)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 12px}
+.finding{background:var(--surface);border:1px solid var(--border);border-left-width:5px;border-radius:10px;margin:10px 0;box-shadow:var(--shadow)}
+.finding.sev-critical{border-left-color:var(--crit)}.finding.sev-high{border-left-color:var(--high)}
+.finding.sev-medium{border-left-color:var(--med)}.finding.sev-low{border-left-color:var(--low)}.finding.sev-info{border-left-color:var(--info)}
+.finding>details>summary{list-style:none;cursor:pointer;padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+.finding>details>summary::-webkit-details-marker{display:none}
+.finding>details>summary::before{content:"\25B8";color:var(--muted);margin-right:2px}.finding>details[open]>summary::before{content:"\25BE"}
+.ftitle{font-weight:600;flex:1 1 280px;overflow-wrap:anywhere}.floc{color:var(--muted);font-size:.85rem;font-family:var(--mono);overflow-wrap:anywhere}
+.badge{font-size:.75rem;font-weight:700;border-radius:6px;padding:1px 8px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap}
+.badge.critical{background:var(--crit-bg);color:var(--crit)}.badge.high{background:var(--high-bg);color:var(--high)}
+.badge.medium{background:var(--med-bg);color:var(--med)}.badge.low{background:var(--low-bg);color:var(--low)}
+.badge.info,.badge.ver{background:var(--info-bg);color:var(--info)}.badge.ver.Confirmed{background:var(--accent-bg);color:var(--accent)}
+.fbody{padding:0 16px 14px 16px}.fbody dt{font-weight:600;margin-top:10px}.fbody dd{margin:2px 0 0}
+.fbody .meaning{color:var(--muted);font-size:.9rem;margin-top:10px}.evidence{margin-top:10px}
+.evidence summary{cursor:pointer;color:var(--accent)}pre{background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;overflow:auto;font-size:.85rem;white-space:pre-wrap;overflow-wrap:anywhere}
+.factions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:.93rem}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top}th{background:var(--info-bg);font-size:.8rem;text-transform:uppercase;letter-spacing:.3px}
+tr:last-child td{border-bottom:0}.tablewrap{overflow-x:auto}
+ul.plain{margin:6px 0;padding-left:20px}.muted{color:var(--muted)}.good li::marker{color:var(--ok)}
+footer{margin-top:48px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border);padding-top:14px}
+@media(max-width:640px){.hero{padding:16px}.hero h1{font-size:1.5rem}main{padding-top:16px}}
+@media print{.topbar .btn,.toolbar,.factions,nav.sections,.skip{display:none!important}.topbar{position:static;box-shadow:none}
+body{background:#fff;color:#000}.finding,.card,.panel,.hero{box-shadow:none;break-inside:avoid}a{color:inherit}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><div class="in">
+<span class="brand">Repo <span>Doctor</span></span><span class="crumb">sample-project · 2026-11-22 12:50 UTC</span><span class="spacer"></span>
+<a class="btn" href="../../index.html">All analyses</a>
+<button class="btn" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
+<button class="btn" id="print" type="button">Print / PDF</button></div>
+<nav class="sections" aria-label="Report sections"><a href="#summary">Summary</a><a href="#health">Dashboard</a><a href="#working">Working well</a>
+<a href="#findings">Findings</a><a href="#quality">Quality</a><a href="#security">Security</a><a href="#testing">Testing</a>
+<a href="#architecture">Architecture</a><a href="#plan">Action plan</a><a href="#method">Methodology</a></nav></header>
+<main id="main">
+<section class="hero" aria-labelledby="top"><h1 id="top">sample-project</h1><p>A Python, JavaScript project using Express, Flask, React, 6 files analysed.</p>
+<p>Full analysis · 2026-11-22 12:50 UTC · run <code>2026-11-22_125021_c2bf46</code></p>
+<span class="pill crit">Needs urgent review</span>
+
+<div class="cards"><div class="card "><div class="n">3</div><div class="l">Total findings</div></div><div class="card crit"><div class="n">1</div><div class="l">Critical</div></div><div class="card high"><div class="n">2</div><div class="l">High</div></div><div class="card med"><div class="n">0</div><div class="l">Medium</div></div><div class="card low"><div class="n">0</div><div class="l">Low</div></div></div></section>
+
+<section id="overview"><h2>Project overview</h2><div class="panel"><p>Repo Doctor examined your project to understand its structure,
+code quality, security, and testing practices. Here is what it found and what it recommends improving.</p>
+<div class="tablewrap"><table><tbody>
+<tr><th scope="row">Location</th><td><code>/path/to/sample-project</code></td></tr>
+<tr><th scope="row">Languages</th><td>Python (2 files), JavaScript (1 files)</td></tr>
+<tr><th scope="row">Frameworks</th><td>Express, Flask, React</td></tr>
+<tr><th scope="row">Files analysed</th><td>6</td></tr>
+<tr><th scope="row">Analysis</th><td>2026-11-22 12:50 UTC · under 1 second · Full analysis</td></tr>
+<tr><th scope="row">Agents</th><td>code, security, testing, reviewer</td></tr>
+<tr><th scope="row">External tools</th><td>none run</td></tr>
+<tr><th scope="row">AI model</th><td>none (built-in checks and external tools only)</td></tr></tbody></table></div>
+</div></section>
+
+<section id="summary"><h2>Executive summary</h2><div class="panel">
+<p><strong>Overall status: Needs urgent review.</strong> At least one critical finding was reported. Check whether it is real.</p><p>Repo Doctor examined sample-project to understand its structure, code quality, security and testing practices. It reported 3 finding(s): 1 critical, 2 high, 0 medium, 0 low.</p><ul class="plain">
+<li><strong>Most important issue:</strong> A string that looks like an API key or token is in the code (<code>src/app.py</code>:5). It may be intentional test or example data, so please confirm whether it is real.</li>
+<li><strong>Biggest strengths:</strong> The project has automated tests; There is a README.</li>
+<li><strong>Areas needing attention:</strong> Security (3).</li>
+<li><strong>Recommended first action:</strong> Check whether the credential-like values are real and rotate any that are (2 places).</li></ul>
+<p class="muted">The status is a rough guide based on the findings listed here. It is not a guarantee of safety or quality.</p></div></section>
+
+<section id="health"><h2>Project health dashboard</h2>
+<div class="panel"><p><strong>What the numbers mean.</strong> Severity says how serious a finding could be.
+<em>Confirmed</em> findings come from a tool or an exact check of the code. <em>Likely</em> and <em>Unconfirmed</em> findings
+come from the AI model and need your judgement. <em>Speculative</em> findings were doubted by the reviewer and are not counted in the totals.</p>
+<p class="muted">Confirmed: 3 · Likely: 0 · Unconfirmed: 0 · Speculative: 0</p></div>
+<div class="charts"><figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 92" width="100%" role="img" aria-labelledby="sev-t sev-d" font-family="system-ui,-apple-system,Segoe UI,sans-serif"><title id="sev-t">Findings by severity</title><desc id="sev-d">Number of findings per severity. Critical: 1; High: 2.</desc><text x="122" y="31" text-anchor="end" font-size="15" fill="currentColor">Critical</text><rect x="130" y="16" width="165" height="20" rx="3" fill="#b42318"/><text x="303" y="31" font-size="15" font-weight="600" fill="currentColor">1</text><text x="122" y="65" text-anchor="end" font-size="15" fill="currentColor">High</text><rect x="130" y="50" width="330" height="20" rx="3" fill="#d9480f"/><text x="468" y="65" font-size="15" font-weight="600" fill="currentColor">2</text></svg><figcaption>Critical: 1, High: 2</figcaption></figure><figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 58" width="100%" role="img" aria-labelledby="ver-t ver-d" font-family="system-ui,-apple-system,Segoe UI,sans-serif"><title id="ver-t">Findings by verification status</title><desc id="ver-d">How well each finding is backed up. Confirmed: 3.</desc><text x="122" y="31" text-anchor="end" font-size="15" fill="currentColor">Confirmed</text><rect x="130" y="16" width="330" height="20" rx="3" fill="#1d6fb8"/><text x="468" y="31" font-size="15" font-weight="600" fill="currentColor">3</text></svg><figcaption>Confirmed: 3</figcaption></figure><figure><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 58" width="100%" role="img" aria-labelledby="area-t area-d" font-family="system-ui,-apple-system,Segoe UI,sans-serif"><title id="area-t">Findings by area</title><desc id="area-d">Number of findings per analysis area. Security: 3.</desc><text x="122" y="31" text-anchor="end" font-size="15" fill="currentColor">Security</text><rect x="130" y="16" width="330" height="20" rx="3" fill="#b42318"/><text x="468" y="31" font-size="15" font-weight="600" fill="currentColor">3</text></svg><figcaption>Security: 3</figcaption></figure></div></section>
+
+<section id="working"><h2>What is working well</h2><div class="panel"><ul class="plain good"><li><strong>The project has automated tests.</strong> 1 test file(s) were found using Jest, unittest/pytest (inferred from test files).</li><li><strong>There is a README.</strong> A README file is present, which helps newcomers get started.</li><li><strong>Dependencies are declared in manifest files.</strong> <code>package.json</code>, <code>requirements.txt</code></li><li><strong>Python files parse cleanly.</strong> No syntax errors in 2 Python file(s).</li></ul></div></section>
+
+<section id="findings"><h2>Findings: what needs attention</h2><div class="toolbar" role="group" aria-label="Filter findings"><button class="btn" type="button" data-filter="all" aria-pressed="true">All</button><button class="btn" type="button" data-filter="critical" aria-pressed="false">Critical</button><button class="btn" type="button" data-filter="high" aria-pressed="false">High</button><button class="btn" type="button" data-filter="security" aria-pressed="false">Security</button><span class="spacer"></span><button class="btn" type="button" id="expand">Expand all</button><button class="btn" type="button" id="collapse">Collapse all</button></div><div class="sevgroup"><h3>Critical (1)</h3><article class="finding sev-critical" id="f-001" data-severity="critical" data-area="security"><details><summary><span class="badge critical">Critical</span><span class="badge ver Confirmed" title="Confirmed by a tool or an exact check of the code.">Confirmed</span><span class="ftitle">A string that looks like an API key or token is in the code</span><span class="floc">src/app.py:5</span></summary><div class="fbody"><div class="callout ctx"><strong>Context:</strong> A comment next to it calls this value &quot;fake&quot;. If it is deliberately fake, this is probably not a real problem. Confirm that, and keep real secrets out of examples.</div><dl><dt>What we found</dt><dd>A value matching a known credential format is written directly in <code>src/app.py</code>. (The value is hidden in this report.)</dd><dt>Why it matters</dt><dd>Secrets stored in code are copied with the code, so they spread to everyone and every place the repository goes.</dd><dt>What could happen</dt><dd>If the value is real, anyone who can read this repository could use it to access the service it belongs to, which could mean unauthorised use, cost, or data exposure.</dd><dt>How to fix it</dt><dd>Revoke/rotate the credential and load it from an environment variable.</dd></dl><p class="meaning">Confirmed by a tool or an exact check of the code. Confidence 90%.</p><details class="evidence"><summary>Technical evidence</summary><pre>API_KEY = &quot;[REDACTED]&quot;  # fake key for redaction tests</pre><p class="muted">A string matching a known credential format is committed. (Value redacted.)</p><p class="muted">Found by security · category <code>security/hardcoded-secret</code></p></details><div class="factions"><button class="btn" type="button" data-copy="F-001 [Critical] A string that looks like an API key or token is in the code
+Location: src/app.py:5
+Status: Confirmed (confidence 90%)
+What: A value matching a known credential format is written directly in `src/app.py`. (The value is hidden in this report.)
+Why it matters: Secrets stored in code are copied with the code, so they spread to everyone and every place the repository goes.
+How to fix: Revoke/rotate the credential and load it from an environment variable.
+Evidence: API_KEY = &quot;[REDACTED]&quot;  # fake key for redaction tests">Copy details</button><button class="btn" type="button" data-copy="src/app.py:5">Copy path</button><a class="btn" href="vscode://file//path/to/sample-project/src/app.py:5">Open in VS Code</a></div></div></details></article></div><div class="sevgroup"><h3>High (2)</h3><article class="finding sev-high" id="f-002" data-severity="high" data-area="security"><details><summary><span class="badge high">High</span><span class="badge ver Confirmed" title="Confirmed by a tool or an exact check of the code.">Confirmed</span><span class="ftitle">A secrets file is not protected from being committed</span><span class="floc">.env</span></summary><div class="fbody"><dl><dt>What we found</dt><dd><code>.env</code> usually holds secrets, and no <code>.gitignore</code> rule excludes it. Repo Doctor did not read its contents.</dd><dt>Why it matters</dt><dd>Files like this are easy to commit by accident.</dd><dt>What could happen</dt><dd>If it contains real secrets and gets committed, they become visible to everyone with access.</dd><dt>How to fix it</dt><dd>Add <code>.env</code> to .gitignore; if already committed, rotate its secrets and purge it from history.</dd></dl><p class="meaning">Confirmed by a tool or an exact check of the code. Confidence 90%.</p><details class="evidence"><summary>Technical evidence</summary><pre>.env present; no matching .gitignore rule</pre><p class="muted">A secrets-bearing file exists in the repository directory and is not matched by .gitignore, so it may be committed. (Contents were not read.)</p><p class="muted">Found by security · category <code>security/unsafe-config</code></p></details><div class="factions"><button class="btn" type="button" data-copy="F-002 [High] A secrets file is not protected from being committed
+Location: .env
+Status: Confirmed (confidence 90%)
+What: `.env` usually holds secrets, and no `.gitignore` rule excludes it. Repo Doctor did not read its contents.
+Why it matters: Files like this are easy to commit by accident.
+How to fix: Add `.env` to .gitignore; if already committed, rotate its secrets and purge it from history.
+Evidence: .env present; no matching .gitignore rule">Copy details</button><button class="btn" type="button" data-copy=".env">Copy path</button><a class="btn" href="vscode://file//path/to/sample-project/.env">Open in VS Code</a></div></div></details></article><article class="finding sev-high" id="f-003" data-severity="high" data-area="security"><details><summary><span class="badge high">High</span><span class="badge ver Confirmed" title="Confirmed by a tool or an exact check of the code.">Confirmed</span><span class="ftitle">A password appears inside a connection address</span><span class="floc">src/app.py:6</span></summary><div class="fbody"><dl><dt>What we found</dt><dd>A web or database address in <code>src/app.py</code> contains a username and password.</dd><dt>Why it matters</dt><dd>Addresses are logged, shared and copied freely, so a password inside one leaks easily.</dd><dt>What could happen</dt><dd>If the password is real, someone with the repository could log in to that service.</dd><dt>How to fix it</dt><dd>Move credentials to environment variables or a secret manager.</dd></dl><p class="meaning">Confirmed by a tool or an exact check of the code. Confidence 90%.</p><details class="evidence"><summary>Technical evidence</summary><pre>DB_URL = &quot;postgres://admin:[REDACTED]@db.local/app&quot;</pre><p class="muted">A connection string contains a username and password.</p><p class="muted">Found by security · category <code>security/hardcoded-secret</code></p></details><div class="factions"><button class="btn" type="button" data-copy="F-003 [High] A password appears inside a connection address
+Location: src/app.py:6
+Status: Confirmed (confidence 90%)
+What: A web or database address in `src/app.py` contains a username and password.
+Why it matters: Addresses are logged, shared and copied freely, so a password inside one leaks easily.
+How to fix: Move credentials to environment variables or a secret manager.
+Evidence: DB_URL = &quot;postgres://admin:[REDACTED]@db.local/app&quot;">Copy details</button><button class="btn" type="button" data-copy="src/app.py:6">Copy path</button><a class="btn" href="vscode://file//path/to/sample-project/src/app.py:6">Open in VS Code</a></div></div></details></article></div></section>
+
+<section id="quality"><h2>Code quality</h2><p>Maintainability, error handling and static-analysis results.</p><p class="muted">Nothing was reported in this area by the checks that ran.</p></section>
+<section id="security"><h2>Security review</h2><p>Potential secrets, risky operations and dependency risks. Confirmed means a tool or exact check found it; whether it is exploitable is always a human decision.</p><div class="tablewrap"><table><caption class="muted">Security findings</caption><thead><tr><th scope="col">ID</th><th scope="col">Severity</th><th scope="col">What</th><th scope="col">Where</th></tr></thead><tbody><tr><td><a href="#f-001">F-001</a></td><td><span class="badge critical">Critical</span></td><td>A string that looks like an API key or token is in the code</td><td class="muted"><code>src/app.py</code>:5</td></tr><tr><td><a href="#f-002">F-002</a></td><td><span class="badge high">High</span></td><td>A secrets file is not protected from being committed</td><td class="muted"><code>.env</code></td></tr><tr><td><a href="#f-003">F-003</a></td><td><span class="badge high">High</span></td><td>A password appears inside a connection address</td><td class="muted"><code>src/app.py</code>:6</td></tr></tbody></table></div></section>
+<section id="testing"><h2>Testing review</h2><p>What testing exists and where it may be thin. A module is only called untested when no test file refers to it.</p><p class="muted">Nothing was reported in this area by the checks that ran.</p><ul class='plain'><li><strong>Test frameworks:</strong> Jest, unittest/pytest (inferred from test files)</li><li><strong>Test files found:</strong> 1</li><li><strong>Examples:</strong> <code>tests/test_app.py</code></li><li><strong>Coverage:</strong> not measured by Repo Doctor, so no coverage percentage is claimed.</li></ul></section>
+<section id="architecture"><h2>Architecture and project structure</h2><p class="muted">Only what Repo Doctor actually discovered is described here.</p><div class="tablewrap"><table><caption class="muted">Top-level folders</caption><thead><tr><th scope="col">Folder</th><th scope="col">Files</th></tr></thead><tbody><tr><td><code>src/</code></td><td>2</td></tr><tr><td><code>tests/</code></td><td>1</td></tr></tbody></table></div><ul class='plain'><li><strong>Entry points:</strong> <code>src/index.js</code>, <code>src/app.py</code></li><li><strong>Dependencies:</strong> 4 runtime, 1 development (package.json, requirements.txt)</li><li>The largest top-level folder is <code>src/</code> with 2 of 6 files (33%).</li></ul></section>
+
+<section id="plan"><h2>Recommended action plan</h2><div class="tablewrap"><table><caption class="muted">Prioritised actions</caption>
+<thead><tr><th scope="col">Priority</th><th scope="col">Action</th><th scope="col">Details</th><th scope="col">Findings</th></tr></thead>
+<tbody><tr><td>1</td><td>Check whether the credential-like values are real and rotate any that are (2 places)</td><td>Revoke/rotate the credential and load it from an environment variable.</td><td><a href="#f-001">F-001</a>, <a href="#f-003">F-003</a></td></tr><tr><td>2</td><td>Add secrets files to .gitignore</td><td>Add <code>.env</code> to .gitignore; if already committed, rotate its secrets and purge it from history.</td><td><a href="#f-002">F-002</a></td></tr></tbody></table></div></section>
+
+<section id="method"><h2>Analysis methodology and limitations</h2><div class="panel">
+<p><strong>What ran.</strong> Agents: code, security, testing, reviewer. AI model: none (built-in checks and external tools only). Files inspected: 6 (skipped: excluded directory: 1, sensitive file: 1, binary: 1).</p><p class="muted">No external tools were run.</p>
+<p><strong>How findings were verified.</strong> Tool and exact-check findings are <em>Confirmed</em>. For AI-model findings the quoted
+code must exist in the named file and line (otherwise the finding is marked <em>Unconfirmed</em> and its severity is capped); a separate
+reviewer step can flag or reject them. Duplicates are merged (0 merged in this run, 0 rejected).</p>
+
+<h3>Limitations</h3><ul class="plain"><li>Repo Doctor reads code; it does not run your application or (unless you ask) your tests.</li><li>Test coverage was not measured. Test findings are based on test files and references, not on running tests.</li><li>Only Python, JavaScript and TypeScript are analysed in depth.</li><li>Pattern-based security checks can miss problems and can flag harmless code; findings need human judgement.</li><li>AI-model findings are judgement calls. Only `Confirmed` findings come from a tool or an exact check.</li><li>No AI model was used in this run, so only built-in checks and external tools contributed.</li></ul></div></section>
+</main><footer><div style="max-width:1080px;margin:0 auto;padding:0 16px 24px">Generated by Repo Doctor 0.3.0.
+Machine-readable data: <code>findings.json</code> (this report and <code>report.md</code> are both built from it).</div></footer>
+<script>
+(function(){var r=document.documentElement;try{var t=localStorage.getItem('rd-theme');if(t)r.setAttribute('data-theme',t);}catch(e){}
+var b=document.getElementById('theme');if(b)b.addEventListener('click',function(){
+var cur=r.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+var next=cur==='dark'?'light':'dark';r.setAttribute('data-theme',next);try{localStorage.setItem('rd-theme',next);}catch(e){}});
+var p=document.getElementById('print');if(p)p.addEventListener('click',function(){window.print();});
+})();
+
+(function(){
+var items=[].slice.call(document.querySelectorAll('.finding'));
+function setAll(open){items.forEach(function(f){var d=f.querySelector('details');if(d)d.open=open;});}
+var ea=document.getElementById('expand'),ca=document.getElementById('collapse');
+if(ea)ea.addEventListener('click',function(){setAll(true);});if(ca)ca.addEventListener('click',function(){setAll(false);});
+var chips=[].slice.call(document.querySelectorAll('[data-filter]'));
+chips.forEach(function(c){c.addEventListener('click',function(){var v=c.getAttribute('data-filter');
+chips.forEach(function(x){x.setAttribute('aria-pressed',x===c?'true':'false');});
+items.forEach(function(f){f.hidden=!(v==='all'||f.getAttribute('data-severity')===v||f.getAttribute('data-area')===v);});
+[].slice.call(document.querySelectorAll('.sevgroup')).forEach(function(g){g.hidden=!g.querySelector('.finding:not([hidden])');});});});
+document.addEventListener('click',function(ev){var b=ev.target.closest('[data-copy]');if(!b)return;var text=b.getAttribute('data-copy');
+function done(){var o=b.textContent;b.textContent='Copied';setTimeout(function(){b.textContent=o;},1400);}
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done,function(){});}
+else{var t=document.createElement('textarea');t.value=text;document.body.appendChild(t);t.select();try{document.execCommand('copy');done();}catch(e){}document.body.removeChild(t);}});
+window.addEventListener('beforeprint',function(){setAll(true);});
+})();
+</script>
+</body>
+</html>

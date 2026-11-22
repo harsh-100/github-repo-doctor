@@ -4,6 +4,7 @@ from repo_doctor.core.settings import SUPPORTED_PROVIDERS, Settings, get_api_key
 
 from .anthropic import AnthropicProvider
 from .base import LLMProvider, ProviderError
+from .exchange import ExchangePending, ExchangeProvider
 from .openai import OpenAIProvider
 
 _REGISTRY: dict[str, type[LLMProvider]] = {
@@ -33,4 +34,4 @@ def create_provider(settings: Settings) -> LLMProvider:
     )
 
 
-__all__ = ["LLMProvider", "ProviderError", "create_provider"]
+__all__ = ["ExchangePending", "ExchangeProvider", "LLMProvider", "ProviderError", "create_provider"]

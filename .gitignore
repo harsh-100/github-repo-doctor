@@ -5,3 +5,5 @@ __pycache__/
 /reports/
 .pytest_cache/
 .ruff_cache/
+.claude/settings.local.json
+.claude/settings.json.bak

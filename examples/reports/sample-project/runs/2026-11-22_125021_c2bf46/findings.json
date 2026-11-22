@@ -1,0 +1,256 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": "2026-11-22_125021_c2bf46",
+    "created_at": "2026-11-22T12:50:21.164399+00:00",
+    "duration_seconds": 0.009476,
+    "mode": "analyze",
+    "tool_version": "0.3.0",
+    "provider": null,
+    "model": null,
+    "llm_used": false,
+    "llm_calls": 0,
+    "provisional": false
+  },
+  "project": {
+    "name": "sample-project",
+    "slug": "sample-project",
+    "root": "/path/to/sample-project",
+    "root_hash": "e5ca23b4612c",
+    "identity_hash": "e5ca23b4612c",
+    "remote": null
+  },
+  "summary": {
+    "status_label": "Critical",
+    "status_headline": "Needs urgent review",
+    "status_meaning": "At least one critical finding was reported. Check whether it is real.",
+    "overview": "Repo Doctor examined sample-project to understand its structure, code quality, security and testing practices. It reported 3 finding(s): 1 critical, 2 high, 0 medium, 0 low.",
+    "top_issue": "A string that looks like an API key or token is in the code (`src/app.py`:5). It may be intentional test or example data, so please confirm whether it is real.",
+    "strengths": [
+      "The project has automated tests",
+      "There is a README"
+    ],
+    "attention_areas": [
+      "Security (3)"
+    ],
+    "first_action": "Check whether the credential-like values are real and rotate any that are (2 places)"
+  },
+  "strengths": [
+    {
+      "title": "The project has automated tests",
+      "evidence": "1 test file(s) were found using Jest, unittest/pytest (inferred from test files)."
+    },
+    {
+      "title": "There is a README",
+      "evidence": "A README file is present, which helps newcomers get started."
+    },
+    {
+      "title": "Dependencies are declared in manifest files",
+      "evidence": "`package.json`, `requirements.txt`"
+    },
+    {
+      "title": "Python files parse cleanly",
+      "evidence": "No syntax errors in 2 Python file(s)."
+    }
+  ],
+  "actions": [
+    {
+      "priority": 1,
+      "title": "Check whether the credential-like values are real and rotate any that are (2 places)",
+      "detail": "Revoke/rotate the credential and load it from an environment variable.",
+      "finding_ids": [
+        "F-001",
+        "F-003"
+      ],
+      "severity": "critical"
+    },
+    {
+      "priority": 2,
+      "title": "Add secrets files to .gitignore",
+      "detail": "Add `.env` to .gitignore; if already committed, rotate its secrets and purge it from history.",
+      "finding_ids": [
+        "F-002"
+      ],
+      "severity": "high"
+    }
+  ],
+  "finding_text": [
+    {
+      "id": "F-001",
+      "title": "A string that looks like an API key or token is in the code",
+      "what": "A value matching a known credential format is written directly in `src/app.py`. (The value is hidden in this report.)",
+      "why": "Secrets stored in code are copied with the code, so they spread to everyone and every place the repository goes.",
+      "risk": "If the value is real, anyone who can read this repository could use it to access the service it belongs to, which could mean unauthorised use, cost, or data exposure.",
+      "fix": "Revoke/rotate the credential and load it from an environment variable.",
+      "context": "A comment next to it calls this value \"fake\". If it is deliberately fake, this is probably not a real problem. Confirm that, and keep real secrets out of examples.",
+      "verification_label": "Confirmed",
+      "verification_meaning": "Confirmed by a tool or an exact check of the code.",
+      "location": "`src/app.py`:5"
+    },
+    {
+      "id": "F-002",
+      "title": "A secrets file is not protected from being committed",
+      "what": "`.env` usually holds secrets, and no `.gitignore` rule excludes it. Repo Doctor did not read its contents.",
+      "why": "Files like this are easy to commit by accident.",
+      "risk": "If it contains real secrets and gets committed, they become visible to everyone with access.",
+      "fix": "Add `.env` to .gitignore; if already committed, rotate its secrets and purge it from history.",
+      "context": "",
+      "verification_label": "Confirmed",
+      "verification_meaning": "Confirmed by a tool or an exact check of the code.",
+      "location": "`.env`"
+    },
+    {
+      "id": "F-003",
+      "title": "A password appears inside a connection address",
+      "what": "A web or database address in `src/app.py` contains a username and password.",
+      "why": "Addresses are logged, shared and copied freely, so a password inside one leaks easily.",
+      "risk": "If the password is real, someone with the repository could log in to that service.",
+      "fix": "Move credentials to environment variables or a secret manager.",
+      "context": "",
+      "verification_label": "Confirmed",
+      "verification_meaning": "Confirmed by a tool or an exact check of the code.",
+      "location": "`src/app.py`:6"
+    }
+  ],
+  "narrative": null,
+  "frameworks": [
+    "Express",
+    "Flask",
+    "React"
+  ],
+  "package_managers": [
+    "npm",
+    "pip"
+  ],
+  "architecture": {
+    "modules": [
+      {
+        "name": "src",
+        "files": 2
+      },
+      {
+        "name": "tests",
+        "files": 1
+      }
+    ],
+    "entry_points": [
+      "src/index.js",
+      "src/app.py"
+    ],
+    "manifests": [
+      "package.json",
+      "requirements.txt"
+    ],
+    "runtime_dependencies": 4,
+    "dev_dependencies": 1,
+    "observations": [
+      "The largest top-level folder is `src/` with 2 of 6 files (33%)."
+    ]
+  },
+  "testing": {
+    "frameworks": [
+      "Jest",
+      "unittest/pytest (inferred from test files)"
+    ],
+    "test_file_count": 1,
+    "test_files": [
+      "tests/test_app.py"
+    ],
+    "coverage_measured": false
+  },
+  "methodology": {
+    "agents": [
+      "code",
+      "security",
+      "testing",
+      "reviewer"
+    ],
+    "tools": [],
+    "files_scanned": 6,
+    "skipped": {
+      "excluded directory": 1,
+      "sensitive file": 1,
+      "binary": 1
+    },
+    "languages": {
+      "Python": 2,
+      "JavaScript": 1
+    },
+    "scan_truncated": false,
+    "notes": [],
+    "limitations": [
+      "Repo Doctor reads code; it does not run your application or (unless you ask) your tests.",
+      "Test coverage was not measured. Test findings are based on test files and references, not on running tests.",
+      "Only Python, JavaScript and TypeScript are analysed in depth.",
+      "Pattern-based security checks can miss problems and can flag harmless code; findings need human judgement.",
+      "AI-model findings are judgement calls. Only `Confirmed` findings come from a tool or an exact check.",
+      "No AI model was used in this run, so only built-in checks and external tools contributed."
+    ]
+  },
+  "result": {
+    "mode": "analyze",
+    "root": "/path/to/sample-project",
+    "findings": [
+      {
+        "id": "F-001",
+        "agent": "security",
+        "category": "security/hardcoded-secret",
+        "severity": "critical",
+        "title": "API key or token in source",
+        "description": "A string matching a known credential format is committed. (Value redacted.)",
+        "file_path": "src/app.py",
+        "line": 5,
+        "evidence": "API_KEY = \"[REDACTED]\"  # fake key for redaction tests",
+        "suggested_fix": "Revoke/rotate the credential and load it from an environment variable.",
+        "confidence": 0.9,
+        "verification": "verified",
+        "review_note": "",
+        "explanation": ""
+      },
+      {
+        "id": "F-002",
+        "agent": "security",
+        "category": "security/unsafe-config",
+        "severity": "high",
+        "title": "Sensitive file not gitignored: .env",
+        "description": "A secrets-bearing file exists in the repository directory and is not matched by .gitignore, so it may be committed. (Contents were not read.)",
+        "file_path": ".env",
+        "line": null,
+        "evidence": ".env present; no matching .gitignore rule",
+        "suggested_fix": "Add `.env` to .gitignore; if already committed, rotate its secrets and purge it from history.",
+        "confidence": 0.9,
+        "verification": "verified",
+        "review_note": "",
+        "explanation": ""
+      },
+      {
+        "id": "F-003",
+        "agent": "security",
+        "category": "security/hardcoded-secret",
+        "severity": "high",
+        "title": "Credentials embedded in URL",
+        "description": "A connection string contains a username and password.",
+        "file_path": "src/app.py",
+        "line": 6,
+        "evidence": "DB_URL = \"postgres://admin:[REDACTED]@db.local/app\"",
+        "suggested_fix": "Move credentials to environment variables or a secret manager.",
+        "confidence": 0.9,
+        "verification": "verified",
+        "review_note": "",
+        "explanation": ""
+      }
+    ],
+    "rejected": [],
+    "agents_run": [
+      "code",
+      "security",
+      "testing"
+    ],
+    "tools": [],
+    "agent_errors": {},
+    "notes": [],
+    "llm_used": false,
+    "llm_calls": 0,
+    "duplicates_merged": 0
+  }
+}
