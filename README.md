@@ -4,7 +4,7 @@ An AI-assisted CLI that scans a local repository and writes a Markdown report ab
 It runs entirely on your machine (no Docker, database or cloud service) and only talks to the
 LLM provider you configure.
 
-> **Status: v0.2.** Working: `setup`, `analyze`, `security`, `quality`, `tests`,
+> **Status: v0.4.** Working: `setup`, `analyze`, `security`, `quality`, `tests`,
 > `explain`, `report`, `fix`. Analysis never modifies your repository; only `fix` can, and only
 > with your explicit approval of each change.
 
@@ -22,6 +22,29 @@ repo-doctor analyze --path /path/to/your/project               # full analysis -
 Docs: [Claude Code (subscription)](docs/CLAUDE_CODE.md) · [Installation](docs/INSTALLATION.md) · [Configuration](docs/CONFIGURATION.md) ·
 [Architecture](docs/ARCHITECTURE.md) · [Agents](docs/AGENTS.md) · [Example reports](examples/reports) ·
 [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Changelog](CHANGELOG.md)
+
+## Analyze a public GitHub repository
+
+```bash
+repo-doctor analyze --repo https://github.com/owner/project
+```
+
+Repo Doctor checks that the URL is a public `github.com` repository (no token needed), tells you what it is about to
+do and asks before continuing (`--yes` skips the question), then clones **only the latest commit** into a temporary
+folder, runs the same analysis as for a local project, saves the reports in `reports/<project>/`, and **always deletes
+the clone**. Nothing from the repository is executed: no scripts, installs or builds. Requires `git`. It works for
+`analyze`, `security`, `quality`, `tests` and `explain`. Private repositories are not supported yet. Limits are in
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md) (`[github]`). `repo-doctor report --repo <url>` shows the latest report.
+
+## Understanding an unfamiliar project
+
+Every full analysis starts with **Understanding this project**: what the project is, what problem it solves, what you
+can do with it, who it is for, its technologies, how it works, how to get started, and how mature it looks. It is
+built from evidence (README, manifests, the commands/agents/routes found in the code, imports), so it can say what is
+**in the code** versus **documented only** or **planned**, separates what the project states from what Repo Doctor
+infers, and never counts a library as used just because it is declared. With an AI model the wording is simpler and
+more complete, but every claim it makes must cite a real file or README section or it is dropped. Repo Doctor never runs
+the project, so it does not claim that features work.
 
 ## No API key? Use your Claude subscription
 
@@ -79,6 +102,7 @@ extra_excludes = ["*.log"]
 
 ```bash
 repo-doctor analyze --path /path/to/project   # full analysis: all agents + tools
+repo-doctor analyze --repo https://github.com/owner/project   # same, for a public GitHub repo
 repo-doctor security --path .                 # security agent only
 repo-doctor quality  --path .                 # code agent only
 repo-doctor tests    --path .                 # testing agent only

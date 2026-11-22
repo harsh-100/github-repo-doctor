@@ -15,6 +15,7 @@ from urllib.parse import quote
 from repo_doctor.core.models import Finding
 from repo_doctor.reports import charts
 from repo_doctor.reports.data import AREA_TITLES, ReportData, fmt_duration
+from repo_doctor.reports.understanding_view import html_section
 from repo_doctor.security.redaction import redact
 
 _INLINE_CODE = re.compile(r"`([^`\n]+)`")
@@ -126,6 +127,18 @@ th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);ver
 tr:last-child td{border-bottom:0}.tablewrap{overflow-x:auto}
 ul.plain{margin:6px 0;padding-left:20px}.muted{color:var(--muted)}.good li::marker{color:var(--ok)}
 footer{margin-top:48px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border);padding-top:14px}
+.cols{columns:2 320px;column-gap:28px}.cols li{break-inside:avoid;margin-bottom:6px}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.ucard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.ucard.wide,.ucard.hero-card{grid-column:1/-1}.ucard h3{margin:0 0 6px;font-size:1rem}.ucard h3:not(:first-child){margin-top:14px}
+.ucard.hero-card{border-left:5px solid var(--accent)}.lead{font-size:1.1rem;margin:4px 0}.ucard h4{margin:14px 0 4px;font-size:.95rem}
+.badge.feat-in-code{background:var(--ok-bg);color:var(--ok)}.badge.feat-documented{background:var(--info-bg);color:var(--info)}
+.badge.feat-planned{background:var(--med-bg);color:var(--med)}
+ol.flow{list-style:none;margin:10px 0;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;counter-reset:s}
+ol.flow .step{counter-increment:s;position:relative;background:var(--accent-bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;
+display:flex;flex-direction:column;max-width:240px;font-size:.9rem}ol.flow .step span{color:var(--muted);font-size:.8rem}
+ol.flow .step::before{content:counter(s);font-size:.7rem;color:var(--muted)}ol.flow .step:not(:last-child)::after{content:"\\2192";position:absolute;right:-17px;top:50%;
+transform:translateY(-50%);color:var(--muted);font-size:1.1rem}ol.flow{gap:22px}
 @media(max-width:640px){.hero{padding:16px}.hero h1{font-size:1.5rem}main{padding-top:16px}}
 @media print{.topbar .btn,.toolbar,.factions,nav.sections,.skip{display:none!important}.topbar{position:static;box-shadow:none}
 body{background:#fff;color:#000}.finding,.card,.panel,.hero{box-shadow:none;break-inside:avoid}a{color:inherit}}
@@ -212,7 +225,8 @@ def _finding_html(data: ReportData, f: Finding) -> str:
     actions = [f'<button class="btn" type="button" data-copy="{e(copy_text)}">Copy details</button>']
     if f.file_path:
         actions.append(f'<button class="btn" type="button" data-copy="{e(loc)}">Copy path</button>')
-        actions.append(f'<a class="btn" href="{e(_vscode_link(data.project.root, f.file_path, f.line))}">Open in VS Code</a>')
+        if data.project.root:  # remote (GitHub) analyses have no local checkout to open
+            actions.append(f'<a class="btn" href="{e(_vscode_link(data.project.root, f.file_path, f.line))}">Open in VS Code</a>')
     parts.append(f'<div class="factions">{"".join(actions)}</div></div></details></article>')
     return "".join(parts)
 
@@ -320,13 +334,24 @@ def render_html(data: ReportData, previous_runs: list[dict] | None = None) -> st
                   f"<tbody>{tool_rows}</tbody></table></div>" if tool_rows else '<p class="muted">No external tools were run.</p>')
     skipped = (f" (skipped: {e(', '.join(f'{k}: {v}' for k, v in m.skipped.items()))})" if m.skipped else "")
 
+    src = p.source
+    if src:
+        commit = f", commit <code>{e(src['commit'][:8])}</code>" if src.get("commit") else ""
+        branch = f", branch <code>{e(src['branch'])}</code>" if src.get("branch") else ""
+        source_row = (f'<tr><th scope="row">Source</th><td>GitHub (public): <a href="{e(src["url"])}">{e(src["owner"])}/{e(src["repo"])}</a>'
+                      f"{branch}{commit}</td></tr>")
+        if src.get("description"):
+            source_row += f'<tr><th scope="row">GitHub description</th><td>{e(src["description"])}</td></tr>'
+    else:
+        source_row = f'<tr><th scope="row">Location</th><td><code>{e(p.root)}</code></td></tr>'
+    understanding = html_section(data, e, inline)
     hist = "../../index.html"
     body = f"""<header class="topbar"><div class="in">
 <span class="brand">Repo <span>Doctor</span></span><span class="crumb">{e(p.name)} · {e(when)}</span><span class="spacer"></span>
 <a class="btn" href="{hist}">All analyses</a>{prev}
 <button class="btn" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
 <button class="btn" id="print" type="button">Print / PDF</button></div>
-<nav class="sections" aria-label="Report sections"><a href="#summary">Summary</a><a href="#health">Dashboard</a><a href="#working">Working well</a>
+<nav class="sections" aria-label="Report sections"><a href="#understanding">Understanding</a><a href="#summary">Summary</a><a href="#health">Dashboard</a><a href="#working">Working well</a>
 <a href="#findings">Findings</a><a href="#quality">Quality</a><a href="#security">Security</a><a href="#testing">Testing</a>
 <a href="#architecture">Architecture</a><a href="#plan">Action plan</a><a href="#method">Methodology</a></nav></header>
 <main id="main">
@@ -339,7 +364,7 @@ def render_html(data: ReportData, previous_runs: list[dict] | None = None) -> st
 <section id="overview"><h2>Project overview</h2><div class="panel"><p>Repo Doctor examined your project to understand its structure,
 code quality, security, and testing practices. Here is what it found and what it recommends improving.</p>
 <div class="tablewrap"><table><tbody>
-<tr><th scope="row">Location</th><td><code>{e(p.root)}</code></td></tr>
+{source_row}
 <tr><th scope="row">Languages</th><td>{e(', '.join(f'{k} ({v} files)' for k, v in m.languages.items()) or 'none detected')}</td></tr>
 <tr><th scope="row">Frameworks</th><td>{e(', '.join(data.frameworks) or 'none detected')}</td></tr>
 <tr><th scope="row">Files analysed</th><td>{m.files_scanned}</td></tr>
@@ -348,6 +373,8 @@ code quality, security, and testing practices. Here is what it found and what it
 <tr><th scope="row">External tools</th><td>{e(', '.join(f"{x['name']} ({x['status']})" for x in m.tools) or 'none run')}</td></tr>
 <tr><th scope="row">AI model</th><td>{e(llm)}</td></tr></tbody></table></div>
 {('<h3>Project description (AI-written summary)</h3>' + mini_markdown(data.narrative)) if data.narrative else ''}</div></section>
+
+{understanding}
 
 <section id="summary"><h2>Executive summary</h2><div class="panel">
 <p><strong>Overall status: {e(s.status_headline)}.</strong> {e(s.status_meaning)}</p><p>{e(s.overview)}</p><ul class="plain">

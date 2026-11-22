@@ -28,6 +28,11 @@ extra_excludes = ["*.log"]    # gitignore-style patterns, added to the defaults
 max_llm_calls_per_agent = 4   # cost control; 0 disables model calls for agents
 batch_chars = 12000           # size of each code batch sent to the model
 
+[github]                      # for --repo (public GitHub repositories)
+clone_timeout_seconds = 180   # stop cloning after this long
+max_clone_mb = 500            # stop if the clone grows beyond this
+api_timeout_seconds = 15
+
 [tools]
 trusted = false               # true = run analysis tools without asking
 timeout_seconds = 120
@@ -52,5 +57,5 @@ Directories: `.git`, `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `bu
 
 ## Command flags worth knowing
 
-`--no-llm` (no network), `--no-tools` (no external tools), `--trust-tools` (pre-approve tools),
+`--repo URL` (analyze a public GitHub repository instead of `--path`), `--yes` (skip the clone confirmation), `--no-llm` (no AI model), `--no-tools` (no external tools), `--trust-tools` (pre-approve tools),
 `--out DIR` (the reports **root**, default `./reports`; each project gets `DIR/<project>/runs/<run-id>/`), and for `fix`/`report`: `--run <run-id>` to use an older analysis. For `fix`: `--id`, `--dry-run`, `--run-tests`.

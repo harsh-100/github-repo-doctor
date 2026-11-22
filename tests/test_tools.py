@@ -304,9 +304,10 @@ def test_tool_and_builtin_findings_on_same_line_are_merged(tmp_path, make_ctx, m
 
 def test_total_steps_counts_tool_step(repo, make_ctx):
     c = make_ctx(repo)
-    assert Orchestrator(c).total_steps("analyze") == 4
-    assert Orchestrator(c, tools=sa.ToolSuite(ApprovalPolicy())).total_steps("analyze") == 5
-    assert Orchestrator(c, tools=sa.ToolSuite(ApprovalPolicy())).total_steps("tests") == 2
+    assert Orchestrator(c).total_steps("analyze") == 5  # understanding + 3 agents + reviewer
+    assert Orchestrator(c, understanding=False).total_steps("analyze") == 4
+    assert Orchestrator(c, tools=sa.ToolSuite(ApprovalPolicy())).total_steps("analyze") == 6
+    assert Orchestrator(c, tools=sa.ToolSuite(ApprovalPolicy())).total_steps("tests") == 2  # focused modes skip understanding
 
 
 # ---------------------------------------------------------------- explainer

@@ -61,6 +61,7 @@ class Dependency(BaseModel):
     spec: str = ""
     dev: bool = False
     ecosystem: str  # python | npm
+    source: str = ""  # manifest the dependency was declared in
 
 
 class ProjectProfile(BaseModel):
@@ -78,6 +79,66 @@ class ProjectProfile(BaseModel):
     top_level_modules: dict[str, int] = Field(default_factory=dict)  # dir -> file count
     concerns: list[str] = Field(default_factory=list)
     inventory: Inventory
+
+
+# ---------------------------------------------------------------- project understanding
+class Feature(BaseModel):
+    text: str
+    status: str = "documented"  # in-code | documented | planned
+    evidence: list[str] = Field(default_factory=list)  # file paths or "README.md § Section"
+
+
+class Audience(BaseModel):
+    text: str
+    basis: str = "inferred"  # documented (quoted from the docs) | inferred (Repo Doctor's reading)
+
+
+class Tech(BaseModel):
+    name: str
+    kind: str  # language | framework | library | ai | database | service | tool
+    confidence: str  # confirmed (imported/used in source) | tests-only | declared-only | mentioned
+    evidence: str = ""
+
+
+class WorkflowStep(BaseModel):
+    title: str
+    detail: str = ""
+    evidence: list[str] = Field(default_factory=list)
+
+
+class GettingStarted(BaseModel):
+    prerequisites: list[str] = Field(default_factory=list)
+    install: list[str] = Field(default_factory=list)
+    configure: list[str] = Field(default_factory=list)
+    usage: list[str] = Field(default_factory=list)
+    paid_or_keys: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+    sources: list[str] = Field(default_factory=list)
+
+
+class Maturity(BaseModel):
+    level: str  # experimental | early development | actively developed | mature-looking
+    positives: list[str] = Field(default_factory=list)
+    gaps: list[str] = Field(default_factory=list)
+    activity: str = ""  # recency evidence, or why it is unknown
+
+
+class ProjectUnderstanding(BaseModel):
+    what: str = ""
+    what_source: str = "docs"  # docs | ai | none
+    problem: str | None = None
+    problem_source: str = "none"  # docs | ai | none
+    features: list[Feature] = Field(default_factory=list)
+    audience: list[Audience] = Field(default_factory=list)
+    technologies: list[Tech] = Field(default_factory=list)
+    workflow: list[WorkflowStep] = Field(default_factory=list)
+    workflow_source: str = "none"  # docs | components | ai | none
+    getting_started: GettingStarted = Field(default_factory=GettingStarted)
+    value: str | None = None
+    maturity: Maturity | None = None
+    evidence_files: list[str] = Field(default_factory=list)
+    uncertainty: list[str] = Field(default_factory=list)
+    ai_used: bool = False
 
 
 class ToolRun(BaseModel):
@@ -100,6 +161,7 @@ class AnalysisResult(BaseModel):
     llm_used: bool = False
     llm_calls: int = 0
     duplicates_merged: int = 0
+    understanding: ProjectUnderstanding | None = None
 
     @property
     def counted(self) -> list[Finding]:

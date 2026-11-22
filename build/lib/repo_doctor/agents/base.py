@@ -39,6 +39,7 @@ class AgentContext:
     settings: Settings
     provider: LLMProvider | None = None
     llm_calls: int = 0
+    source_meta: dict | None = None  # facts about a remote source (e.g. GitHub), never code
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
 

@@ -1,11 +1,11 @@
 {
   "schema_version": 2,
   "run": {
-    "id": "2026-11-22_125021_c2bf46",
-    "created_at": "2026-11-22T12:50:21.164399+00:00",
-    "duration_seconds": 0.009476,
+    "id": "2026-11-22_145322_be71e6",
+    "created_at": "2026-11-22T14:53:22.235936+00:00",
+    "duration_seconds": 0.018576,
     "mode": "analyze",
-    "tool_version": "0.3.0",
+    "tool_version": "0.4.0",
     "provider": null,
     "model": null,
     "llm_used": false,
@@ -18,7 +18,8 @@
     "root": "/path/to/sample-project",
     "root_hash": "e5ca23b4612c",
     "identity_hash": "e5ca23b4612c",
-    "remote": null
+    "remote": null,
+    "source": null
   },
   "summary": {
     "status_label": "Critical",
@@ -251,6 +252,90 @@
     "notes": [],
     "llm_used": false,
     "llm_calls": 0,
-    "duplicates_merged": 0
+    "duplicates_merged": 0,
+    "understanding": {
+      "what": "Tiny fixture used by Repo Doctor's integration tests. The repository defines 1 web route(s).",
+      "what_source": "docs",
+      "problem": null,
+      "problem_source": "none",
+      "features": [],
+      "audience": [],
+      "technologies": [
+        {
+          "name": "JavaScript",
+          "kind": "language",
+          "confidence": "confirmed",
+          "evidence": "1 project source file(s)"
+        },
+        {
+          "name": "Python",
+          "kind": "language",
+          "confidence": "confirmed",
+          "evidence": "1 project source file(s)"
+        },
+        {
+          "name": "Express",
+          "kind": "framework",
+          "confidence": "confirmed",
+          "evidence": "imported in source code"
+        },
+        {
+          "name": "Flask",
+          "kind": "framework",
+          "confidence": "confirmed",
+          "evidence": "imported in source code"
+        },
+        {
+          "name": "React",
+          "kind": "framework",
+          "confidence": "declared-only",
+          "evidence": "listed in a dependency file but never imported"
+        },
+        {
+          "name": "httpx",
+          "kind": "library",
+          "confidence": "declared-only",
+          "evidence": "listed in a dependency file but never imported"
+        }
+      ],
+      "workflow": [],
+      "workflow_source": "none",
+      "getting_started": {
+        "prerequisites": [],
+        "install": [],
+        "configure": [],
+        "usage": [],
+        "paid_or_keys": [],
+        "limitations": [],
+        "sources": []
+      },
+      "value": null,
+      "maturity": {
+        "level": "early development",
+        "positives": [
+          "1 test file(s)",
+          "version 1.0.0"
+        ],
+        "gaps": [
+          "no CI workflow found",
+          "no changelog",
+          "no contribution guidelines",
+          "no license file",
+          "little documentation beyond the README"
+        ],
+        "activity": "Recent activity cannot be determined from a local folder or a shallow clone."
+      },
+      "evidence_files": [
+        "README.md",
+        "package.json",
+        "requirements.txt",
+        "src/index.js"
+      ],
+      "uncertainty": [
+        "Declared in dependency files but never imported (not counted as used): React, httpx",
+        "No AI model was used: the summary below only repeats what the documentation and code state. Problem, audience and value appear only when documented."
+      ],
+      "ai_used": false
+    }
   }
 }

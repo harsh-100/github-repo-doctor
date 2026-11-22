@@ -98,7 +98,7 @@ def test_analyze_writes_both_reports_and_findings_json(sample_repo, tmp_path):
     assert {p.name for p in rd.iterdir()} == {"report.md", "report.html", "findings.json", "metadata.json", "assets"}
     assert {p.name for p in (out / "sample").iterdir()} == {"index.html", "project.json", "README.md", "runs"}
     assert "Critical Issues:" in r.output and "Project Health: Critical" in r.output
-    assert "[5/5] Reviewer Agent" in r.output and "Static Analysis" in r.output
+    assert "[6/6] Reviewer Agent" in r.output and "Static Analysis" in r.output and "Project Understanding" in r.output
     assert "denied" in r.output  # tools never run without approval
     for f in out.rglob("*"):
         if f.is_file():

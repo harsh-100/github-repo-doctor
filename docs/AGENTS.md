@@ -14,6 +14,17 @@ claim whose quoted evidence was found in the file), **unverified** (evidence not
 medium, confidence capped at 0.3), **speculative** (reviewer flagged it; excluded from the health score),
 **rejected** (removed; listed separately in the report).
 
+## Project Understanding step
+
+Runs first in full analyses (`analyze`, not the focused modes). It is not a finding-producing agent: it produces the
+"Understanding this project" section. Evidence is gathered deterministically (README sections, manifest descriptions,
+CLI commands / Claude Code commands, agents and skills / HTTP routes found in code, technologies matched against real
+imports, maturity signals). Without an AI model, only documented statements are shown. With one, a single model call
+rewrites it in plain language and the answer is validated: evidence references must be real files or README sections
+(otherwise the claim is dropped), feature status (`in the code` / `documented only` / `planned`) is computed by
+Repo Doctor, an audience entry counts as "stated by the project" only if its quote appears in the README, and workflow
+steps need real evidence. The output also lists its uncertainty.
+
 ## Agents
 
 | Agent | Deterministic checks | Model review |

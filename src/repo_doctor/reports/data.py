@@ -54,6 +54,7 @@ class ProjectInfo(BaseModel):
     root_hash: str
     identity_hash: str
     remote: str | None = None
+    source: dict | None = None  # {"kind": "github", "url", "owner", "repo", "branch", "commit", ...} for remote analyses
 
 
 class Strength(BaseModel):
@@ -136,6 +137,10 @@ class ReportData(BaseModel):
     testing: TestingInfo = Field(default_factory=TestingInfo)
     methodology: Methodology = Field(default_factory=Methodology)
     result: AnalysisResult
+
+    @property
+    def understanding(self):
+        return self.result.understanding
 
     # ---- convenience for renderers
     def text_for(self, finding_id: str) -> FindingText:
@@ -246,7 +251,7 @@ _LIMITATIONS = [
 ]
 
 
-def _methodology(profile: ProjectProfile, result: AnalysisResult) -> Methodology:
+def _methodology(profile: ProjectProfile, result: AnalysisResult, source: dict | None = None) -> Methodology:
     inv = profile.inventory
     notes = [n for n in result.notes if not n.startswith("WARNING")]
     warnings = [n.removeprefix("WARNING: ") for n in result.notes if n.startswith("WARNING")]
@@ -258,6 +263,9 @@ def _methodology(profile: ProjectProfile, result: AnalysisResult) -> Methodology
             limits.append(f"{t.name}: {t.status}. {t.detail}")
     if inv.truncated:
         limits.append("The scan hit the file limit, so some files were not inspected.")
+    if source:
+        limits.append("The repository was analysed from a temporary shallow clone (latest commit only, no history) "
+                      "that was deleted afterwards. Nothing from it was executed.")
     limits += [f"Warning: {w}" for w in warnings]
     return Methodology(
         agents=[*result.agents_run, "reviewer"], tools=[t.model_dump() for t in result.tools],
@@ -315,4 +323,4 @@ def build_report_data(*, profile: ProjectProfile, result: AnalysisResult, run: R
         actions=actions, finding_text=list(texts.values()), frameworks=profile.frameworks,
         package_managers=profile.package_managers, architecture=_architecture(profile),
         testing=TestingInfo(frameworks=profile.test_frameworks, test_file_count=len(tests), test_files=tests[:15]),
-        methodology=_methodology(profile, result), result=result)
+        methodology=_methodology(profile, result, project.source), result=result)

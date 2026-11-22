@@ -1,6 +1,6 @@
 # Repo Doctor report: sample-project
 
-_Full analysis · 2026-11-22 12:50 UTC · run `2026-11-22_125021_c2bf46`_
+_Full analysis · 2026-11-22 14:53 UTC · run `2026-11-22_145322_be71e6`_
 
 [Project history](../../index.html) · [HTML version](report.html)
 
@@ -15,13 +15,73 @@ Repo Doctor examined your project to understand its structure, code quality, sec
 | Languages | Python (2 files), JavaScript (1 files) |
 | Frameworks | Express, Flask, React |
 | Files analysed | 6 |
-| Analysis time | 2026-11-22 12:50 UTC (under 1 second) |
+| Analysis time | 2026-11-22 14:53 UTC (under 1 second) |
 | Mode | Full analysis |
 | Agents | code, security, testing, reviewer |
 | External tools | none run |
 | AI model | none (built-in checks and external tools only) |
 
-## 2. Executive summary
+## 2. Understanding this project
+
+_Built from the project's own documentation and code (no AI model was used). Repo Doctor has not run the project or verified that its features work._
+
+### What is this project?
+
+Tiny fixture used by Repo Doctor's integration tests. The repository defines 1 web route(s).
+
+### What problem does it solve?
+
+_The documentation does not state this._
+
+### What can you do with it?
+
+_No features could be backed by evidence in the repository._
+
+### Who can benefit from it?
+
+_The documentation does not state this._
+
+### What are the main technologies?
+
+| Technology | Type | How we know |
+|---|---|---|
+| JavaScript | Language | Used in the code: 1 project source file(s) |
+| Python | Language | Used in the code: 1 project source file(s) |
+| Express | Framework | Used in the code: imported in source code |
+| Flask | Framework | Used in the code: imported in source code |
+| React | Framework | Declared, no usage found: listed in a dependency file but never imported |
+| httpx | Library | Declared, no usage found: listed in a dependency file but never imported |
+
+### How does it work?
+
+_Repo Doctor could not find enough evidence to describe a workflow._
+
+### How can you get started?
+
+_Repo Doctor has not run any of these commands._
+
+_No setup instructions were found in the documentation._
+
+### What makes it useful?
+
+_The documentation does not state this._
+
+### How mature does it look?
+
+**Early development.** This is Repo Doctor's assessment from the evidence below, not an official project status.
+
+- **Signs of maturity:** 1 test file(s), version 1.0.0
+- **Missing or weak:** no CI workflow found, no changelog, no contribution guidelines, no license file, little documentation beyond the README
+- **Activity:** Recent activity cannot be determined from a local folder or a shallow clone.
+
+### Evidence and uncertainty
+
+Files this section is based on: `README.md`, `package.json`, `requirements.txt`, `src/index.js`.
+
+- Declared in dependency files but never imported (not counted as used): React, httpx
+- No AI model was used: the summary below only repeats what the documentation and code state. Problem, audience and value appear only when documented.
+
+## 3. Executive summary
 
 **Overall status: Needs urgent review.** At least one critical finding was reported. Check whether it is real.
 
@@ -34,7 +94,7 @@ Repo Doctor examined sample-project to understand its structure, code quality, s
 
 _The status is a rough guide based on the findings listed here. It is not a guarantee of safety or quality._
 
-## 3. Project health dashboard
+## 4. Project health dashboard
 
 | Critical | High | Medium | Low | Total |
 |---|---|---|---|---|
@@ -52,14 +112,14 @@ _The status is a rough guide based on the findings listed here. It is not a guar
 
 **What the numbers mean.** Severity says how serious a finding could be. *Confirmed* findings come from a tool or an exact check of the code. *Likely* and *Unconfirmed* findings come from the AI model and need your judgement. *Speculative* findings were doubted by the reviewer and are not counted in the totals.
 
-## 4. What is working well
+## 5. What is working well
 
 - **The project has automated tests.** 1 test file(s) were found using Jest, unittest/pytest (inferred from test files).
 - **There is a README.** A README file is present, which helps newcomers get started.
 - **Dependencies are declared in manifest files.** `package.json`, `requirements.txt`
 - **Python files parse cleanly.** No syntax errors in 2 Python file(s).
 
-## 5. Findings: what needs attention
+## 6. Findings: what needs attention
 
 ### Critical (1)
 
@@ -148,13 +208,13 @@ Found by: security · category `security/hardcoded-secret`
 
 </details>
 
-## 6. Code quality
+## 7. Code quality
 
 Maintainability, error handling and static-analysis results.
 
 _Nothing was reported in this area by the checks that ran._
 
-## 7. Security review
+## 8. Security review
 
 Potential secrets, risky operations and dependency risks. *Confirmed* means a tool or exact check found it; whether it is *exploitable* is always a human decision.
 
@@ -164,7 +224,7 @@ Potential secrets, risky operations and dependency risks. *Confirmed* means a to
 | [F-002](#f-002) | High | A secrets file is not protected from being committed | `.env` |
 | [F-003](#f-003) | High | A password appears inside a connection address | `src/app.py`:6 |
 
-## 8. Testing review
+## 9. Testing review
 
 What testing exists and where it may be thin. A module is only called untested when no test file refers to it.
 
@@ -176,7 +236,7 @@ _Nothing was reported in this area by the checks that ran._
 - **Examples:** `tests/test_app.py`
 - **Coverage:** not measured by Repo Doctor, so no coverage percentage is claimed.
 
-## 9. Architecture and project structure
+## 10. Architecture and project structure
 
 Only what Repo Doctor actually discovered is described here.
 
@@ -189,14 +249,14 @@ Only what Repo Doctor actually discovered is described here.
 - **Dependencies:** 4 runtime, 1 development (`package.json`, `requirements.txt`)
 - The largest top-level folder is `src/` with 2 of 6 files (33%).
 
-## 10. Recommended action plan
+## 11. Recommended action plan
 
 | Priority | Action | Details | Findings |
 |---|---|---|---|
 | 1 | Check whether the credential-like values are real and rotate any that are (2 places) | Revoke/rotate the credential and load it from an environment variable. | [F-001](#f-001), [F-003](#f-003) |
 | 2 | Add secrets files to .gitignore | Add `.env` to .gitignore; if already committed, rotate its secrets and purge it from history. | [F-002](#f-002) |
 
-## 11. Analysis methodology and limitations
+## 12. Analysis methodology and limitations
 
 **What ran**
 
@@ -218,4 +278,4 @@ _No external tools were run._
 - No AI model was used in this run, so only built-in checks and external tools contributed.
 
 ---
-_Generated by Repo Doctor 0.3.0. Machine-readable data: `findings.json` (this report and the HTML version are both built from it)._
+_Generated by Repo Doctor 0.4.0. Machine-readable data: `findings.json` (this report and the HTML version are both built from it)._

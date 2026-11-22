@@ -52,11 +52,18 @@ class ToolSettings(BaseModel):
     disabled: list[str] = Field(default_factory=list)
 
 
+class GitHubSettings(BaseModel):
+    clone_timeout_seconds: int = Field(default=180, gt=0)
+    max_clone_mb: int = Field(default=500, gt=0)
+    api_timeout_seconds: float = Field(default=15.0, gt=0)
+
+
 class Settings(BaseModel):
     llm: LLMSettings = Field(default_factory=LLMSettings)
     scan: ScanSettings = Field(default_factory=ScanSettings)
     agents: AgentSettings = Field(default_factory=AgentSettings)
     tools: ToolSettings = Field(default_factory=ToolSettings)
+    github: GitHubSettings = Field(default_factory=GitHubSettings)
 
     @property
     def effective_model(self) -> str:
@@ -127,6 +134,10 @@ def save_settings(settings: Settings) -> Path:
         f"trusted = {str(settings.tools.trusted).lower()}\n"
         f"timeout_seconds = {settings.tools.timeout_seconds}\n"
         f"disabled = [{', '.join(_toml_str(t) for t in settings.tools.disabled)}]\n"
+        "\n[github]\n"
+        f"clone_timeout_seconds = {settings.github.clone_timeout_seconds}\n"
+        f"max_clone_mb = {settings.github.max_clone_mb}\n"
+        f"api_timeout_seconds = {settings.github.api_timeout_seconds}\n"
     )
     path.write_text(text, encoding="utf-8")
     return path

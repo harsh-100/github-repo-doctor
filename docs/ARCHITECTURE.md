@@ -1,7 +1,8 @@
 # Architecture
 
 ```
-cli.py ──► Orchestrator ──► ToolSuite (external tools, approval-gated)
+cli.py ─► source (local folder | GitHub: sources/github.py, temp shallow clone, always cleaned up)
+  └─► Orchestrator ──► ToolSuite (external tools, approval-gated)
               │            ├─► CodeAgent / SecurityAgent / TestingAgent
               │            ├─► dedup ─► ReviewerAgent ─► explainer
               ▼
@@ -21,6 +22,9 @@ cli.py fix ─► core/fixer.py ─► core/verify.py (rollback on failure) ─�
 | `core/models.py` | Pydantic models (`Finding`, `ProjectProfile`, `AnalysisResult`, ...) |
 | `core/orchestrator.py`, `core/dedup.py`, `core/explainer.py` | run, merge, explain |
 | `core/fixer.py`, `core/verify.py` | fix proposals, backups, apply/rollback, verification |
+| `sources/github.py` | public GitHub repositories: strict URL parsing, access check, hardened shallow clone, guaranteed cleanup |
+| `analyzers/docs.py`, `components.py`, `technologies.py` | evidence for Project Understanding: README sections and commands (never executed), real commands/agents/routes, technologies checked against imports |
+| `core/understanding.py` | builds the "Understanding this project" section: evidence first, optional AI wording validated against the evidence |
 | `providers/` | `LLMProvider` abstraction: Anthropic and OpenAI over `httpx`, plus `exchange` (file-based; Claude Code answers, see `docs/CLAUDE_CODE.md`) |
 | `claude_code/`, `core/claude_install.py` | packaged slash commands, restricted subagent and permissions; `claude-install` copies them into a project |
 | `analyzers/` | repository scanner, language/framework detection, manifests, tool specs and parsers |

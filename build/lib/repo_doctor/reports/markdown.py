@@ -5,6 +5,7 @@ import re
 
 from repo_doctor.core.models import Finding, Severity
 from repo_doctor.reports.data import ReportData, fmt_duration
+from repo_doctor.reports.understanding_view import markdown_section
 from repo_doctor.reports.workspace import atomic_write_text  # re-exported for callers
 from repo_doctor.security.redaction import redact
 
@@ -71,6 +72,18 @@ def _area_section(data: ReportData, area: str, intro: str, extra: list[str]) -> 
     return NL.join(lines + ["", *extra]).rstrip()
 
 
+def _source_rows(data: ReportData, esc) -> list[list[str]]:
+    src = data.project.source
+    if not src:
+        return [["Location", f"`{esc(data.project.root)}`"]]
+    commit = f", commit `{src['commit'][:8]}`" if src.get("commit") else ""
+    branch = f", branch `{esc(src['branch'])}`" if src.get("branch") else ""
+    rows = [["Source", f"GitHub (public): [{esc(src['owner'])}/{esc(src['repo'])}]({src['url']}){branch}{commit}"]]
+    if src.get("description"):
+        rows.append(["GitHub description", esc(src["description"])])
+    return rows
+
+
 def render_markdown(data: ReportData) -> str:
     r, p, s = data.result, data.project, data.summary
     c = r.severity_counts()
@@ -92,7 +105,7 @@ def render_markdown(data: ReportData) -> str:
             "Repo Doctor examined your project to understand its structure, code quality, security, and testing "
             "practices. Here is what it found and what it recommends improving.", "",
             _table(["", ""], [
-                ["Project", esc(p.name)], ["Location", f"`{esc(p.root)}`"], ["Languages", langs],
+                ["Project", esc(p.name)], *_source_rows(data, esc), ["Languages", langs],
                 ["Frameworks", ", ".join(data.frameworks) or "none detected"],
                 ["Files analysed", str(data.methodology.files_scanned)],
                 ["Analysis time", f"{data.run.created_at[:16].replace('T', ' ')} UTC ({fmt_duration(data.run.duration_seconds)})"],
@@ -102,7 +115,9 @@ def render_markdown(data: ReportData) -> str:
     if data.narrative:
         out += ["**Project description (AI-written summary):**", "", esc(data.narrative), ""]
 
-    out += ["## 2. Executive summary", "", f"**Overall status: {s.status_headline}.** {s.status_meaning}", "",
+    out += [markdown_section(data, 2, esc)]
+
+    out += ["## 3. Executive summary", "", f"**Overall status: {s.status_headline}.** {s.status_meaning}", "",
             esc(s.overview), ""]
     if s.top_issue:
         out += [f"- **Most important issue:** {esc(s.top_issue)}"]
@@ -114,7 +129,7 @@ def render_markdown(data: ReportData) -> str:
         out += [f"- **Recommended first action:** {esc(s.first_action)}."]
     out += ["", "_The status is a rough guide based on the findings listed here. It is not a guarantee of safety or quality._", ""]
 
-    out += ["## 3. Project health dashboard", "",
+    out += ["## 4. Project health dashboard", "",
             _table(["Critical", "High", "Medium", "Low", "Total"],
                    [[c["critical"], c["high"], c["medium"], c["low"], sum(c[k] for k in ("critical", "high", "medium", "low"))]]),
             "", _table(["Confirmed", "Likely", "Unconfirmed", "Speculative"],
@@ -127,12 +142,12 @@ def render_markdown(data: ReportData) -> str:
             "tool or an exact check of the code. *Likely* and *Unconfirmed* findings come from the AI model and need "
             "your judgement. *Speculative* findings were doubted by the reviewer and are not counted in the totals.", ""]
 
-    out += ["## 4. What is working well", ""]
+    out += ["## 5. What is working well", ""]
     out += ([f"- **{x.title}.** {x.evidence}" for x in data.strengths] if data.strengths else
             ["_No positive observations could be backed by evidence in this run._"])
     out += [""]
 
-    out += ["## 5. Findings: what needs attention", ""]
+    out += ["## 6. Findings: what needs attention", ""]
     shown = False
     for sev in ("critical", "high", "medium", "low", "info"):
         group = [f for f in fs if f.severity.value == sev]
@@ -142,13 +157,13 @@ def render_markdown(data: ReportData) -> str:
     if not shown:
         out += ["_No findings were reported._", ""]
 
-    out += ["## 6. Code quality", "", _area_section(
+    out += ["## 7. Code quality", "", _area_section(
         data, "quality", "Maintainability, error handling and static-analysis results.", []), ""]
     sec_extra = []
     sec_tools = [t for t in data.methodology.tools if t["name"] in ("bandit", "gitleaks", "npm-audit")]
     if sec_tools:
         sec_extra = ["**Security tools:** " + ", ".join(f"{t['name']} ({t['status']})" for t in sec_tools)]
-    out += ["## 7. Security review", "", _area_section(
+    out += ["## 8. Security review", "", _area_section(
         data, "security", "Potential secrets, risky operations and dependency risks. *Confirmed* means a tool or exact "
         "check found it; whether it is *exploitable* is always a human decision.", sec_extra), ""]
 
@@ -158,7 +173,7 @@ def render_markdown(data: ReportData) -> str:
     if t.test_files:
         test_lines.append("- **Examples:** " + ", ".join(f"`{esc(x)}`" for x in t.test_files[:6]))
     test_lines.append("- **Coverage:** not measured by Repo Doctor, so no coverage percentage is claimed.")
-    out += ["## 8. Testing review", "", _area_section(
+    out += ["## 9. Testing review", "", _area_section(
         data, "testing", "What testing exists and where it may be thin. A module is only called untested when no "
         "test file refers to it.", [""] + test_lines), ""]
 
@@ -170,16 +185,16 @@ def render_markdown(data: ReportData) -> str:
              f"- **Dependencies:** {a.runtime_dependencies} runtime, {a.dev_dependencies} development "
              f"({', '.join(f'`{m}`' for m in a.manifests) or 'no manifests'})"]
     arch += [f"- {esc(o)}" for o in a.observations]
-    out += ["## 9. Architecture and project structure", "",
+    out += ["## 10. Architecture and project structure", "",
             "Only what Repo Doctor actually discovered is described here.", "", *arch, ""]
 
-    out += ["## 10. Recommended action plan", "",
+    out += ["## 11. Recommended action plan", "",
             _table(["Priority", "Action", "Details", "Findings"], [
                 [x.priority, esc(x.title), esc(x.detail), ", ".join(f"[{i}](#{_anchor(i)})" for i in x.finding_ids) or "-"]
                 for x in data.actions]), ""]
 
     m = data.methodology
-    out += ["## 11. Analysis methodology and limitations", "", "**What ran**", "",
+    out += ["## 12. Analysis methodology and limitations", "", "**What ran**", "",
             f"- Agents: {', '.join(m.agents)}", f"- AI model: {llm}",
             f"- Files inspected: {m.files_scanned}"
             + (f" (skipped: {', '.join(f'{k}: {v}' for k, v in m.skipped.items())})" if m.skipped else ""), ""]

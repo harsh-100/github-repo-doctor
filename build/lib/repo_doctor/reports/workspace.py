@@ -114,8 +114,9 @@ def _read_json(path: Path) -> dict | None:
         return None
 
 
-def find_workspace(reports_root: Path, project_root: Path) -> Workspace | None:
-    ident, _remote = project_identity(project_root)
+def find_workspace(reports_root: Path, project_root: Path,
+                   identity: tuple[str, str | None] | None = None) -> Workspace | None:
+    ident, _remote = identity or project_identity(project_root)
     h = short_hash(ident)
     if not reports_root.is_dir():
         return None
@@ -126,20 +127,22 @@ def find_workspace(reports_root: Path, project_root: Path) -> Workspace | None:
     return None
 
 
-def find_or_create_workspace(reports_root: Path, project_root: Path) -> Workspace:
-    existing = find_workspace(reports_root, project_root)
+def find_or_create_workspace(reports_root: Path, project_root: Path, *, name: str | None = None,
+                             identity: tuple[str, str | None] | None = None) -> Workspace:
+    """Workspace for a project. `identity`/`name` are given for remote sources (e.g. a GitHub clone in a temp dir)."""
+    existing = find_workspace(reports_root, project_root, identity)
     if existing:
         return existing
     project_root = project_root.resolve()
-    ident, remote = project_identity(project_root)
+    ident, remote = identity or project_identity(project_root)
     h = short_hash(ident)
-    slug = slugify(project_root.name)
+    slug = slugify(name or project_root.name)
     folder = reports_root / slug
     if folder.exists():                      # same folder name, different project => distinct, stable folder
         slug = f"{slug}-{h[:6]}"
         folder = reports_root / slug
     folder.mkdir(parents=True, exist_ok=True)
-    ws = Workspace(folder, slug, project_root.name, h, remote)
+    ws = Workspace(folder, slug, name or project_root.name, h, remote)
     atomic_write_text(folder / "project.json", json.dumps(
         {"schema_version": SCHEMA_VERSION, "name": ws.name, "slug": slug, "identity_hash": h, "remote": remote,
          "runs": []}, indent=2) + "\n")

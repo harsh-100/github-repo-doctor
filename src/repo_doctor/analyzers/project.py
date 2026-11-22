@@ -5,6 +5,7 @@ from collections import Counter
 from pathlib import Path, PurePosixPath
 
 from repo_doctor.core.models import Inventory, ProjectProfile
+from repo_doctor.reports.language import fixture_marker
 
 from .dependencies import parse_manifest
 
@@ -47,6 +48,8 @@ def build_profile(root: Path, inv: Inventory) -> ProjectProfile:
         except ValueError as exc:
             concerns.append(f"Could not parse manifest ({exc})")
             continue
+        for d in deps:
+            d.source = f.path
         profile.dependencies.extend(deps)
         if f.path.endswith("package.json"):
             scripts.update(extra.get("scripts") or {})
@@ -62,7 +65,8 @@ def build_profile(root: Path, inv: Inventory) -> ProjectProfile:
             except (OSError, ValueError):
                 pass
 
-    dep_names = {_norm(d.name) for d in profile.dependencies}
+    # dependencies declared inside examples/tests/fixtures describe those fixtures, not the project itself
+    dep_names = {_norm(d.name) for d in profile.dependencies if not fixture_marker(d.source)}
     profile.frameworks = sorted(
         {v for k, v in JS_FRAMEWORKS.items() if _norm(k) in dep_names}
         | {v for k, v in PY_FRAMEWORKS.items() if _norm(k) in dep_names}

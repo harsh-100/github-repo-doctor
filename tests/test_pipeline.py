@@ -155,7 +155,7 @@ def test_full_pipeline_deterministic_on_sample(sample_repo, make_ctx):
 def test_full_pipeline_with_mock_llm_counts_calls(sample_repo, make_ctx):
     p = FakeProvider({"findings": [], "reviews": []})
     r = Orchestrator(make_ctx(sample_repo, p)).run("analyze")
-    assert r.llm_used and r.llm_calls == len(p.prompts) == 2  # code + security batches
+    assert r.llm_used and r.llm_calls == len(p.prompts) == 3  # understanding + code + security batches
 
 
 # ---- health & report
@@ -182,8 +182,9 @@ def test_markdown_report_has_all_sections_and_no_secrets(sample_repo, make_ctx):
     c = make_ctx(sample_repo)
     r = Orchestrator(c).run("analyze")
     md = render_markdown(_data(c, r))
-    for n in range(1, 12):
+    for n in range(1, 13):
         assert f"## {n}. " in md
+    assert "## 2. Understanding this project" in md
     assert "Overall status: Needs urgent review" in md and "Technical evidence" in md and "How to fix it" in md
     for secret in ("hunter2secret", "sk-ant-abcdefghijklmnop1234567890", "abcdef123456"):
         assert secret not in md and secret not in r.model_dump_json() and secret not in _data(c, r).model_dump_json()

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.4.0
+
+- **Analyze public GitHub repositories:** `repo-doctor analyze --repo https://github.com/owner/project` (also
+  `security`, `quality`, `tests`, `explain`). Repo Doctor validates the HTTPS URL, checks the repository is public,
+  explains what it will do and asks first (`--yes` to skip), shallow-clones into an isolated temporary folder
+  (no hooks, no symlinks, no credentials, no submodules, timeout and size limits), runs the normal pipeline, saves
+  reports in the project's workspace and always deletes the clone. Nothing from the repository is executed.
+- **Understanding This Project:** a new section (after the overview) that explains what the project is, the problem it
+  solves, what users can do with it, who benefits, its technologies, how it works (workflow diagram), how to get
+  started, and how mature it looks. It is built from evidence first (README sections, manifests, commands/agents/routes
+  found in code, technologies checked against actual imports) and optionally reworded by the AI model, whose answer is
+  validated: evidence must exist, feature status is computed, quotes are checked. Features documented but not found
+  in code are labelled; roadmap items are "planned"; declared-but-unused libraries are not counted as used.
+- `report --repo <url>` finds a GitHub analysis. Progress lines show real stage state (and failures).
+- Dependencies declared inside `examples/`, `tests/` or fixtures no longer count as the project's own frameworks.
+- New settings: `[github] clone_timeout_seconds`, `max_clone_mb`, `api_timeout_seconds`.
+
 ## 0.3.0
 
 - **Project report workspaces.** Reports now live in `reports/<project>/runs/<run-id>/` and are never

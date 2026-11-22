@@ -70,6 +70,18 @@ th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--border);ver
 tr:last-child td{border-bottom:0}.tablewrap{overflow-x:auto}
 ul.plain{margin:6px 0;padding-left:20px}.muted{color:var(--muted)}.good li::marker{color:var(--ok)}
 footer{margin-top:48px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border);padding-top:14px}
+.cols{columns:2 320px;column-gap:28px}.cols li{break-inside:avoid;margin-bottom:6px}
+.ugrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+.ucard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.ucard.wide,.ucard.hero-card{grid-column:1/-1}.ucard h3{margin:0 0 6px;font-size:1rem}.ucard h3:not(:first-child){margin-top:14px}
+.ucard.hero-card{border-left:5px solid var(--accent)}.lead{font-size:1.1rem;margin:4px 0}.ucard h4{margin:14px 0 4px;font-size:.95rem}
+.badge.feat-in-code{background:var(--ok-bg);color:var(--ok)}.badge.feat-documented{background:var(--info-bg);color:var(--info)}
+.badge.feat-planned{background:var(--med-bg);color:var(--med)}
+ol.flow{list-style:none;margin:10px 0;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;counter-reset:s}
+ol.flow .step{counter-increment:s;position:relative;background:var(--accent-bg);border:1px solid var(--border);border-radius:10px;padding:8px 12px;
+display:flex;flex-direction:column;max-width:240px;font-size:.9rem}ol.flow .step span{color:var(--muted);font-size:.8rem}
+ol.flow .step::before{content:counter(s);font-size:.7rem;color:var(--muted)}ol.flow .step:not(:last-child)::after{content:"\2192";position:absolute;right:-17px;top:50%;
+transform:translateY(-50%);color:var(--muted);font-size:1.1rem}ol.flow{gap:22px}
 @media(max-width:640px){.hero{padding:16px}.hero h1{font-size:1.5rem}main{padding-top:16px}}
 @media print{.topbar .btn,.toolbar,.factions,nav.sections,.skip{display:none!important}.topbar{position:static;box-shadow:none}
 body{background:#fff;color:#000}.finding,.card,.panel,.hero{box-shadow:none;break-inside:avoid}a{color:inherit}}
@@ -78,16 +90,16 @@ body{background:#fff;color:#000}.finding,.card,.panel,.hero{box-shadow:none;brea
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="topbar"><div class="in">
-<span class="brand">Repo <span>Doctor</span></span><span class="crumb">sample-project · 2026-11-22 12:50 UTC</span><span class="spacer"></span>
+<span class="brand">Repo <span>Doctor</span></span><span class="crumb">sample-project · 2026-11-22 14:53 UTC</span><span class="spacer"></span>
 <a class="btn" href="../../index.html">All analyses</a>
 <button class="btn" id="theme" type="button" aria-label="Toggle light or dark theme">Theme</button>
 <button class="btn" id="print" type="button">Print / PDF</button></div>
-<nav class="sections" aria-label="Report sections"><a href="#summary">Summary</a><a href="#health">Dashboard</a><a href="#working">Working well</a>
+<nav class="sections" aria-label="Report sections"><a href="#understanding">Understanding</a><a href="#summary">Summary</a><a href="#health">Dashboard</a><a href="#working">Working well</a>
 <a href="#findings">Findings</a><a href="#quality">Quality</a><a href="#security">Security</a><a href="#testing">Testing</a>
 <a href="#architecture">Architecture</a><a href="#plan">Action plan</a><a href="#method">Methodology</a></nav></header>
 <main id="main">
 <section class="hero" aria-labelledby="top"><h1 id="top">sample-project</h1><p>A Python, JavaScript project using Express, Flask, React, 6 files analysed.</p>
-<p>Full analysis · 2026-11-22 12:50 UTC · run <code>2026-11-22_125021_c2bf46</code></p>
+<p>Full analysis · 2026-11-22 14:53 UTC · run <code>2026-11-22_145322_be71e6</code></p>
 <span class="pill crit">Needs urgent review</span>
 
 <div class="cards"><div class="card "><div class="n">3</div><div class="l">Total findings</div></div><div class="card crit"><div class="n">1</div><div class="l">Critical</div></div><div class="card high"><div class="n">2</div><div class="l">High</div></div><div class="card med"><div class="n">0</div><div class="l">Medium</div></div><div class="card low"><div class="n">0</div><div class="l">Low</div></div></div></section>
@@ -99,11 +111,13 @@ code quality, security, and testing practices. Here is what it found and what it
 <tr><th scope="row">Languages</th><td>Python (2 files), JavaScript (1 files)</td></tr>
 <tr><th scope="row">Frameworks</th><td>Express, Flask, React</td></tr>
 <tr><th scope="row">Files analysed</th><td>6</td></tr>
-<tr><th scope="row">Analysis</th><td>2026-11-22 12:50 UTC · under 1 second · Full analysis</td></tr>
+<tr><th scope="row">Analysis</th><td>2026-11-22 14:53 UTC · under 1 second · Full analysis</td></tr>
 <tr><th scope="row">Agents</th><td>code, security, testing, reviewer</td></tr>
 <tr><th scope="row">External tools</th><td>none run</td></tr>
 <tr><th scope="row">AI model</th><td>none (built-in checks and external tools only)</td></tr></tbody></table></div>
 </div></section>
+
+<section id="understanding"><h2>Understanding this project</h2><div class="ugrid"><div class="ucard hero-card"><div class="muted" style="margin-bottom:6px"><span class="badge ver">From the docs and code</span> Built from the project&#x27;s own documentation and code (no AI model was used). Repo Doctor has not run the project or verified that its features work.</div><h3>What is this project?</h3><p class="lead">Tiny fixture used by Repo Doctor&#x27;s integration tests. The repository defines 1 web route(s).</p><h3>What problem does it solve?</h3><p class="muted">The documentation does not state this.</p></div><div class="ucard wide"><h3>What can you do with it?</h3><p class="muted">No features could be backed by evidence in the repository.</p></div><div class="ucard "><h3>Who can benefit from it?</h3><p class="muted">The documentation does not state this.</p></div><div class="ucard "><h3>What makes it useful?</h3><p class="muted">The documentation does not state this.</p></div><div class="ucard wide"><h3>What are the main technologies?</h3><div class="tablewrap"><table><caption class="muted">Technologies and how Repo Doctor knows</caption><thead><tr><th scope="col">Technology</th><th scope="col">Type</th><th scope="col">Evidence</th></tr></thead><tbody><tr><td>JavaScript</td><td>Language</td><td>Used in the code<br><span class='muted'>1 project source file(s)</span></td></tr><tr><td>Python</td><td>Language</td><td>Used in the code<br><span class='muted'>1 project source file(s)</span></td></tr><tr><td>Express</td><td>Framework</td><td>Used in the code<br><span class='muted'>imported in source code</span></td></tr><tr><td>Flask</td><td>Framework</td><td>Used in the code<br><span class='muted'>imported in source code</span></td></tr><tr><td>React</td><td>Framework</td><td>Declared, no usage found<br><span class='muted'>listed in a dependency file but never imported</span></td></tr><tr><td>httpx</td><td>Library</td><td>Declared, no usage found<br><span class='muted'>listed in a dependency file but never imported</span></td></tr></tbody></table></div></div><div class="ucard wide"><h3>How does it work?</h3><p class="muted">Repo Doctor could not find enough evidence to describe a workflow.</p></div><div class="ucard wide"><h3>How can you get started?</h3><p class="muted">No setup instructions were found in the documentation.</p><p class="muted">Repo Doctor has not run any of these commands.</p></div><div class="ucard wide"><h3>How mature does it look?</h3><p><span class="pill fair" style="margin:0">Early development</span></p><p class="muted">Repo Doctor's assessment from the evidence below, not an official project status.</p><ul class="plain"><li><strong>Signs of maturity:</strong> 1 test file(s), version 1.0.0</li><li><strong>Missing or weak:</strong> no CI workflow found, no changelog, no contribution guidelines, no license file, little documentation beyond the README</li><li><strong>Activity:</strong> Recent activity cannot be determined from a local folder or a shallow clone.</li></ul></div></div><details><summary class="btn" style="display:inline-block">Evidence and uncertainty</summary><p>Files this section is based on: <code>README.md</code>, <code>package.json</code>, <code>requirements.txt</code>, <code>src/index.js</code>.</p><ul class="plain"><li>Declared in dependency files but never imported (not counted as used): React, httpx</li><li>No AI model was used: the summary below only repeats what the documentation and code state. Problem, audience and value appear only when documented.</li></ul></details></section>
 
 <section id="summary"><h2>Executive summary</h2><div class="panel">
 <p><strong>Overall status: Needs urgent review.</strong> At least one critical finding was reported. Check whether it is real.</p><p>Repo Doctor examined sample-project to understand its structure, code quality, security and testing practices. It reported 3 finding(s): 1 critical, 2 high, 0 medium, 0 low.</p><ul class="plain">
@@ -158,7 +172,7 @@ code must exist in the named file and line (otherwise the finding is marked <em>
 reviewer step can flag or reject them. Duplicates are merged (0 merged in this run, 0 rejected).</p>
 
 <h3>Limitations</h3><ul class="plain"><li>Repo Doctor reads code; it does not run your application or (unless you ask) your tests.</li><li>Test coverage was not measured. Test findings are based on test files and references, not on running tests.</li><li>Only Python, JavaScript and TypeScript are analysed in depth.</li><li>Pattern-based security checks can miss problems and can flag harmless code; findings need human judgement.</li><li>AI-model findings are judgement calls. Only `Confirmed` findings come from a tool or an exact check.</li><li>No AI model was used in this run, so only built-in checks and external tools contributed.</li></ul></div></section>
-</main><footer><div style="max-width:1080px;margin:0 auto;padding:0 16px 24px">Generated by Repo Doctor 0.3.0.
+</main><footer><div style="max-width:1080px;margin:0 auto;padding:0 16px 24px">Generated by Repo Doctor 0.4.0.
 Machine-readable data: <code>findings.json</code> (this report and <code>report.md</code> are both built from it).</div></footer>
 <script>
 (function(){var r=document.documentElement;try{var t=localStorage.getItem('rd-theme');if(t)r.setAttribute('data-theme',t);}catch(e){}

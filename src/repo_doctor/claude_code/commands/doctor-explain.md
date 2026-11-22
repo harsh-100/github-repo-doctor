@@ -1,6 +1,6 @@
 ---
 description: Explain a project's architecture in plain language using your Claude Code login
-argument-hint: [path]
+argument-hint: [path or https://github.com/owner/repo]
 allowed-tools: Bash(repo-doctor:*)
 ---
 

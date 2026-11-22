@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -45,6 +48,14 @@ from repo_doctor.reports.markdown import atomic_write_text
 from repo_doctor.reports.publish import publish_run
 from repo_doctor.reports.workspace import find_workspace, latest_run, run_path
 from repo_doctor.security.permissions import ApprovalPolicy, PathSecurityError, resolve_repo_root
+from repo_doctor.sources.github import (
+    GitHubRef,
+    SourceError,
+    check_via_git,
+    cloned_repository,
+    fetch_repo_meta,
+    parse_github_url,
+)
 from repo_doctor.tools.file_reader import RepoReader
 
 app = typer.Typer(help="AI-powered repository analysis agent.", no_args_is_help=True,
@@ -60,6 +71,9 @@ TrustOpt = Annotated[bool, typer.Option(
 ProviderOpt = Annotated[str | None, typer.Option(
     "--provider", envvar="REPO_DOCTOR_PROVIDER",
     help="Override the provider: anthropic, openai, or exchange (answered by Claude Code slash commands).")]
+PathOptional = Annotated[Path | None, typer.Option("--path", "-p", help="Local repository to analyse (default: .).")]
+RepoOpt = Annotated[str | None, typer.Option("--repo", help="Public GitHub repository URL to analyse instead of --path.")]
+YesOpt = Annotated[bool, typer.Option("--yes", "-y", help="Don't ask before cloning a GitHub repository.")]
 NoToolsOpt = Annotated[bool, typer.Option("--no-tools", help="Do not run external analysis tools.")]
 
 
@@ -191,6 +205,70 @@ def setup(
         raise typer.Exit(1)
 
 
+@dataclass
+class Source:
+    root: Path
+    info: dict | None = None  # facts about a remote source (None for a local folder)
+    meta: dict | None = None
+
+
+def _step(symbol: str, text: str, style: str = "") -> None:
+    console.print(f"[{style}][{symbol}][/{style}] {text}" if style else f"[{symbol}] {text}", highlight=False)
+
+
+@contextmanager
+def _source(path: Path | None, repo: str | None, yes: bool, settings: Settings) -> Iterator[Source]:
+    """A local folder, or a public GitHub repository cloned into a temp directory that is ALWAYS removed."""
+    if repo and path is not None:
+        raise _fail("Use either --path or --repo, not both.")
+    if not repo:
+        yield Source(root=_root(path or Path(".")))
+        return
+    console.print("\n[bold]Repo Doctor - Public Repository Analysis[/bold]\n")
+    try:
+        ref = parse_github_url(repo)
+        _step("✓", "GitHub URL validated", "green")
+        meta = fetch_repo_meta(ref, settings.github.api_timeout_seconds)
+        if not meta.api_available:
+            check_via_git(ref, settings.github.api_timeout_seconds * 2)
+            err.print("[yellow]GitHub's API rate limit was reached; confirmed the repository is public with git instead "
+                      "(no size or activity details).[/yellow]")
+        _step("✓", "Repository accessibility checked", "green")
+    except SourceError as exc:
+        _step("✗", str(exc), "red")
+        raise typer.Exit(1) from exc
+    ref = GitHubRef(ref.owner, ref.repo, ref.branch)
+    console.print(f"\nRepository: [bold]{meta.full_name}[/bold]\nSource: GitHub\nVisibility: Public")
+    details = [x for x in (meta.language, f"{meta.stars} stars" if meta.stars is not None else None, meta.license,
+                           f"~{meta.size_kb // 1024} MB (full history; a shallow clone is smaller)" if meta.size_kb and meta.size_kb > 1024 else None,
+                           "archived" if meta.archived else None, "fork" if meta.fork else None) if x]
+    if details:
+        console.print(f"Details: {', '.join(details)}")
+    console.print("\nWhat will happen:\n  1. Clone the repository (latest commit only) into a temporary folder.\n"
+                  "  2. Inspect its files and structure.\n  3. Analyze code quality and security.\n"
+                  "  4. Review testing and architecture.\n  5. Generate a project understanding summary.\n"
+                  "  6. Generate Markdown and HTML reports in your reports folder.\n  7. Delete the temporary clone.\n\n"
+                  "Repository code will not be executed automatically.\n")
+    if not yes and not _confirm("Continue?"):
+        console.print("Cancelled. Nothing was cloned.")
+        raise typer.Exit(1)
+    try:
+        _step("●", "Cloning repository...", "yellow")
+        with cloned_repository(ref, meta, settings.github) as clone:
+            _step("✓", f"Repository cloned{(' (commit ' + clone.commit[:8] + ')') if clone.commit else ''}", "green")
+            info = {"kind": "github", "url": ref.url, "owner": ref.owner, "repo": ref.repo,
+                    "branch": ref.branch or meta.default_branch, "commit": clone.commit,
+                    "description": meta.description, "stars": meta.stars, "license": meta.license,
+                    "pushed_at": meta.pushed_at, "archived": meta.archived, "topics": meta.topics,
+                    "language": meta.language}
+            yield Source(root=clone.path, info=info,
+                         meta={k: info[k] for k in ("description", "topics", "language", "license", "pushed_at", "archived")})
+            _step("✓", "Temporary clone removed", "green")
+    except SourceError as exc:
+        _step("✗", str(exc), "red")
+        raise typer.Exit(1) from exc
+
+
 def _display(path: Path) -> str:
     """Path relative to the current directory when possible (shorter, more readable)."""
     try:
@@ -221,6 +299,23 @@ def _locate_run(out_dir: Path, root: Path, run_id: str | None):
     return ws, ws.runs_dir / meta["run_id"]
 
 
+def _locate_remote_run(out_dir: Path, ref: GitHubRef, run_id: str | None):
+    identity = (f"git:github.com/{ref.owner.lower()}/{ref.repo.lower()}", f"github.com/{ref.owner}/{ref.repo}")
+    ws = find_workspace(out_dir, Path("."), identity)
+    if ws is None:
+        raise _fail(f"No analysis of {ref.full_name} found in {out_dir}. Run `repo-doctor analyze --repo {ref.url}` first.")
+    if run_id:
+        try:
+            d = run_path(ws, run_id)
+        except ValueError as exc:
+            raise _fail(str(exc))
+        return ws, d
+    meta = latest_run(ws)
+    if meta is None:
+        raise _fail("Only provisional analyses exist (model answers were still pending). Answer them and re-run.")
+    return ws, ws.runs_dir / meta["run_id"]
+
+
 def _confirm(message: str) -> bool:
     """Interactive approval; any failure to ask (no TTY/EOF) means NO."""
     try:
@@ -229,13 +324,23 @@ def _confirm(message: str) -> bool:
         return False
 
 
-def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
-              trust_tools: bool = False, no_tools: bool = False, provider_opt: str | None = None) -> None:
+def _run_mode(mode: str, path: Path | None, out: Path | None, no_llm: bool, trust_tools: bool = False,
+              no_tools: bool = False, provider_opt: str | None = None, repo: str | None = None,
+              yes: bool = False) -> None:
     settings = _settings()
-    root = _root(path)
+    with _source(path, repo, yes, settings) as src:
+        _run_analysis(mode, src, settings, out, no_llm, trust_tools, no_tools, provider_opt)
+
+
+def _run_analysis(mode: str, src: Source, settings: Settings, out: Path | None, no_llm: bool,
+                  trust_tools: bool, no_tools: bool, provider_opt: str | None) -> None:
+    root = src.root
+    remote = src.info is not None
     out_dir = out or Path("reports")
     started = datetime.now(UTC)
     profile = _profile(root, settings)
+    if remote:
+        _step("✓", f"Project structure discovered ({len(profile.inventory.files)} files)", "green")
     reader = RepoReader(root, profile.inventory)
 
     provider = None
@@ -253,7 +358,8 @@ def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
             f"[dim]Notice: redacted code excerpts (up to {settings.agents.max_llm_calls_per_agent} "
             f"batches of ~{settings.agents.batch_chars} chars per agent) will be sent to "
             f"{provider.name} ({provider.model}). Use --no-llm to avoid this.[/dim]")
-    ctx = AgentContext(root=root, profile=profile, reader=reader, settings=settings, provider=provider)
+    ctx = AgentContext(root=root, profile=profile, reader=reader, settings=settings, provider=provider,
+                       source_meta=src.meta)
     suite = None
     if not no_tools:
         policy = ApprovalPolicy(trusted=trust_tools or settings.tools.trusted, prompt=_confirm)
@@ -264,9 +370,14 @@ def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
 
     def progress(step: str, state: str) -> None:
         if state == "running":
+            if remote:  # long waits happen here: show the stage that is actually running
+                label = {"static": "Static analysis", "understanding": "Understanding project functionality",
+                         "code": "Code quality analysis", "security": "Security analysis", "testing": "Testing analysis",
+                         "reviewer": "Reviewer verification"}.get(step, step)
+                _step("●", f"{label}...", "yellow")
             return
         counter["n"] += 1
-        label = {"static": "Static Analysis", "code": "Code Analysis Agent", "security": "Security Agent",
+        label = {"static": "Static Analysis", "understanding": "Project Understanding", "code": "Code Analysis Agent", "security": "Security Agent",
                  "testing": "Testing Agent", "reviewer": "Reviewer Agent"}.get(step, step)
         mark = "[green]DONE[/green]" if state == "done" else "[red]FAILED[/red]"
         console.print(f"[{counter['n']}/{total}] {label:<24} {mark}")
@@ -275,7 +386,7 @@ def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
                   f"[bold]Languages:[/bold] {', '.join(profile.languages) or '-'}")
     # Not wrapped in a spinner: tool approval prompts need a clean terminal.
     result = orch.run(mode, progress)
-    result.root = str(root)
+    result.root = "" if remote else str(root)
 
     narrative = None
     if mode == "analyze" and provider:
@@ -285,7 +396,7 @@ def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
     published = publish_run(reports_root=out_dir, project_root=root, profile=profile, result=result,
                             narrative=narrative, mode=mode, started=started,
                             provider=provider.name if provider else None, model=provider.model if provider else None,
-                            provisional=pending > 0)
+                            provisional=pending > 0, source=src.info)
 
     c = result.severity_counts()
     table = Table(show_header=False, box=None)
@@ -318,52 +429,53 @@ def _run_mode(mode: str, path: Path, out: Path | None, no_llm: bool,
 
 
 @app.command()
-def analyze(path: PathOpt = Path("."), out: OutOpt = None, no_llm: NoLLMOpt = False,
+def analyze(path: PathOptional = None, out: OutOpt = None, no_llm: NoLLMOpt = False,
     trust_tools: TrustOpt = False, no_tools: NoToolsOpt = False,
-    provider: ProviderOpt = None):
+    provider: ProviderOpt = None, repo: RepoOpt = None, yes: YesOpt = False):
     """Full analysis: overview + code, security and testing agents + reviewer."""
-    _run_mode("analyze", path, out, no_llm, trust_tools, no_tools, provider)
+    _run_mode("analyze", path, out, no_llm, trust_tools, no_tools, provider, repo, yes)
 
 
 @app.command()
-def security(path: PathOpt = Path("."), out: OutOpt = None, no_llm: NoLLMOpt = False,
+def security(path: PathOptional = None, out: OutOpt = None, no_llm: NoLLMOpt = False,
     trust_tools: TrustOpt = False, no_tools: NoToolsOpt = False,
-    provider: ProviderOpt = None):
+    provider: ProviderOpt = None, repo: RepoOpt = None, yes: YesOpt = False):
     """Security-focused analysis."""
-    _run_mode("security", path, out, no_llm, trust_tools, no_tools, provider)
+    _run_mode("security", path, out, no_llm, trust_tools, no_tools, provider, repo, yes)
 
 
 @app.command()
-def quality(path: PathOpt = Path("."), out: OutOpt = None, no_llm: NoLLMOpt = False,
+def quality(path: PathOptional = None, out: OutOpt = None, no_llm: NoLLMOpt = False,
     trust_tools: TrustOpt = False, no_tools: NoToolsOpt = False,
-    provider: ProviderOpt = None):
+    provider: ProviderOpt = None, repo: RepoOpt = None, yes: YesOpt = False):
     """Code quality analysis."""
-    _run_mode("quality", path, out, no_llm, trust_tools, no_tools, provider)
+    _run_mode("quality", path, out, no_llm, trust_tools, no_tools, provider, repo, yes)
 
 
 @app.command()
-def tests(path: PathOpt = Path("."), out: OutOpt = None, no_llm: NoLLMOpt = False,
+def tests(path: PathOptional = None, out: OutOpt = None, no_llm: NoLLMOpt = False,
     trust_tools: TrustOpt = False, no_tools: NoToolsOpt = False,
-    provider: ProviderOpt = None):
+    provider: ProviderOpt = None, repo: RepoOpt = None, yes: YesOpt = False):
     """Testing analysis (does not execute tests)."""
-    _run_mode("tests", path, out, no_llm, trust_tools, no_tools, provider)
+    _run_mode("tests", path, out, no_llm, trust_tools, no_tools, provider, repo, yes)
 
 
 @app.command()
-def explain(path: PathOpt = Path("."), out: OutOpt = None, provider: ProviderOpt = None):
+def explain(path: PathOptional = None, out: OutOpt = None, provider: ProviderOpt = None,
+            repo: RepoOpt = None, yes: YesOpt = False):
     """Explain the project architecture in simple language (requires an AI provider)."""
     settings = _settings()
-    root = _root(path)
-    profile = _profile(root, settings)
-    try:
-        prov = _provider(settings, provider, out or Path("reports"))
-    except ProviderError as exc:
-        raise _fail(f"Could not generate an explanation. Run `repo-doctor setup` or check: {exc}")
-    text = _narrative(prov, root, profile, simple=True)
-    if text is None:
-        _pending_notice(prov)
-        raise _fail("Could not generate an explanation. Run `repo-doctor setup` or check the error above.")
-    console.print(Panel(text, title=f"About {profile.name}"))
+    with _source(path, repo, yes, settings) as src:
+        profile = _profile(src.root, settings)
+        try:
+            prov = _provider(settings, provider, out or Path("reports"))
+        except ProviderError as exc:
+            raise _fail(f"Could not generate an explanation. Run `repo-doctor setup` or check: {exc}")
+        text = _narrative(prov, src.root, profile, simple=True)
+        if text is None:
+            _pending_notice(prov)
+            raise _fail("Could not generate an explanation. Run `repo-doctor setup` or check the error above.")
+        console.print(Panel(text, title=f"About {profile.name}"))
 
 
 @app.command()
@@ -621,13 +733,21 @@ def report(
     out: OutOpt = None,
     run: Annotated[str | None, typer.Option("--run", help="Run id (default: latest).")] = None,
     as_json: Annotated[bool, typer.Option("--json", help="Print the report locations as JSON.")] = False,
+    repo: RepoOpt = None,
 ):
     """Show the latest report for a project (Markdown), or its file locations with --json."""
     import json
 
     from rich.markdown import Markdown
-    root = _root(path)
-    ws, run_dir = _locate_run(out or Path("reports"), root, run)
+    if repo:  # a GitHub analysis has no local folder: find its workspace by repository identity
+        try:
+            ref = parse_github_url(repo)
+        except SourceError as exc:
+            raise _fail(str(exc))
+        ws, run_dir = _locate_remote_run(out or Path("reports"), ref, run)
+    else:
+        root = _root(path)
+        ws, run_dir = _locate_run(out or Path("reports"), root, run)
     if as_json:
         console.print_json(json.dumps({
             "project": ws.name, "run_id": run_dir.name, "markdown": str((run_dir / "report.md").resolve()),

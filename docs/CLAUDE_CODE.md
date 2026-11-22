@@ -16,6 +16,7 @@ Then inside Claude Code:
 
 ```
 /doctor-analyze .                      # full analysis; add: security | quality | tests
+/doctor-analyze https://github.com/owner/repo   # a public GitHub repository (cloned to a temp folder)
 /doctor-analyze . --tools              # also run Ruff/Bandit/... (Claude Code asks you to confirm)
 /doctor-fix .                          # list fixable findings, review one diff at a time
 /doctor-explain .

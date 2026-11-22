@@ -12,6 +12,7 @@ from repo_doctor.analyzers.static_analysis import ToolSuite
 from repo_doctor.core.dedup import deduplicate
 from repo_doctor.core.explainer import explain_tool_findings
 from repo_doctor.core.models import AnalysisResult, Finding, Severity
+from repo_doctor.core.understanding import understand
 
 MODES = ("analyze", "security", "quality", "tests")
 _SEV_ORDER = {s: i for i, s in enumerate(Severity)}
@@ -25,9 +26,11 @@ def default_agents() -> list[Agent]:
 
 class Orchestrator:
     def __init__(self, ctx: AgentContext, agents: list[Agent] | None = None,
-                 reviewer: ReviewerAgent | None = None, tools: ToolSuite | None = None):
+                 reviewer: ReviewerAgent | None = None, tools: ToolSuite | None = None,
+                 understanding: bool = True):
         self.ctx = ctx
         self.tools = tools
+        self.understanding = understanding
         self.agents = agents if agents is not None else default_agents()
         self.reviewer = reviewer or ReviewerAgent()
 
@@ -37,8 +40,12 @@ class Orchestrator:
     def has_tool_step(self, mode: str) -> bool:
         return bool(self.tools and self.tools.selected(mode))
 
+    def has_understanding_step(self, mode: str) -> bool:
+        return self.understanding and mode == "analyze"
+
     def total_steps(self, mode: str) -> int:
-        return len(self.steps(mode)) + 1 + int(self.has_tool_step(mode))
+        return (len(self.steps(mode)) + 1 + int(self.has_tool_step(mode))
+                + int(self.has_understanding_step(mode)))
 
     def run(self, mode: str, progress: Progress | None = None) -> AnalysisResult:
         if mode not in MODES:
@@ -58,6 +65,15 @@ class Orchestrator:
             except Exception as exc:  # noqa: BLE001 - reported in result
                 result.agent_errors["static"] = f"{type(exc).__name__}: {exc}"
                 note("static", "failed")
+
+        if self.has_understanding_step(mode):
+            note("understanding", "running")
+            try:
+                result.understanding = understand(self.ctx, self.ctx.profile.name)
+                note("understanding", "done")
+            except Exception as exc:  # noqa: BLE001 - reported in result; the rest of the analysis continues
+                result.agent_errors["understanding"] = f"{type(exc).__name__}: {exc}"
+                note("understanding", "failed")
 
         for agent in self.steps(mode):
             note(agent.name, "running")
