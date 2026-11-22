@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="docs/images/Repo Doctor_ AI-Powered Code Insights.png" alt="Repo Doctor - AI-powered codebase health analysis" width="100%">
+</p>
+
 # GitHub Repo Doctor
+
+
 
 An AI-assisted CLI that scans a local repository and writes a Markdown report about it.
 It runs entirely on your machine (no Docker, database or cloud service) and only talks to the
@@ -252,4 +258,4 @@ ruff check src tests
 ## License
 
 MIT. See [LICENSE](LICENSE).
-# github-repo-doctor
+
