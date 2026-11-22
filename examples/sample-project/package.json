@@ -1,0 +1,8 @@
+{
+  "name": "sample-web",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": { "test": "jest" },
+  "dependencies": { "express": "^4.18.0", "react": "^18.2.0" },
+  "devDependencies": { "jest": "^29.0.0" }
+}

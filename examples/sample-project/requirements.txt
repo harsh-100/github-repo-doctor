@@ -1,0 +1,3 @@
+flask>=3.0  # web
+httpx==0.27.0
+git+https://github.com/example/private.git
